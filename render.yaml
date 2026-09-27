@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: syncsupport
+    env: node
+    region: oregon
+    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        value: mongodb+srv://adminSync:SyncSupport@cluster0.c1emi49.mongodb.net/syncsupport?retryWrites=true&w=majority
+      - key: GEMINI_API_KEY
+        value: AQ.Ab8RN6IUrbifr9INx1oiBwHYrTUj2vKs-VZdFE9UOEFcoSQ4Ag
+      - key: JWT_SECRET
+        value: syncsupport_jwt_production_secret_key_2026
