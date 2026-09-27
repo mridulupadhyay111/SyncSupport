@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, X, Send, Bot, User, UserCheck, Sparkles, RefreshCw, ChevronDown, CheckCircle2, Brain, FileText, Plus } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, User, UserCheck, Sparkles, RefreshCw, ChevronDown, CheckCircle2, Brain, FileText, Plus, Lock, LogIn } from 'lucide-react';
 import { api } from '../services/api';
 import { getSocket } from '../services/socket';
 
 export default function ChatWidget({ currentUser, onLoginClick }) {
   const [isOpen, setIsOpen] = useState(false);
-  const customerName = currentUser?.name || 'Customer Visitor';
-  const customerEmail = currentUser?.email || 'customer@syncsupport.io';
+  const customerName = currentUser?.name || '';
+  const customerEmail = currentUser?.email || '';
   const [isInitialized, setIsInitialized] = useState(false);
 
   const [ticket, setTicket] = useState(null);
@@ -39,12 +39,21 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
   };
 
   useEffect(() => {
-    if (customerEmail) {
+    if (currentUser && customerEmail) {
       fetchCustomerTickets();
+    } else {
+      setCustomerTickets([]);
+      setTicket(null);
+      setMessages([]);
+      setIsInitialized(false);
     }
-  }, [customerEmail]);
+  }, [currentUser, customerEmail]);
 
   const handleSelectPastTicket = async (t) => {
+    if (!currentUser) {
+      onLoginClick();
+      return;
+    }
     try {
       setIsLoading(true);
       setTicket(t);
@@ -68,6 +77,10 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
   };
 
   const handleStartNewQuery = async () => {
+    if (!currentUser) {
+      onLoginClick();
+      return;
+    }
     try {
       setIsLoading(true);
       const res = await api.startNewCustomerTicket(customerName, customerEmail);
@@ -206,6 +219,7 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
 
   // Auto initialize chat session
   const initSession = async () => {
+    if (!currentUser) return null;
     try {
       setIsLoading(true);
       const res = await api.initCustomerTicket(customerName, customerEmail);
@@ -230,10 +244,10 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
     return null;
   };
 
-  // Periodic polling fallback when escalated to ensure human agent replies reflect immediately
+  // Periodic polling fallback when escalated
   useEffect(() => {
     let interval = null;
-    if (isEscalated && ticket && ticket._id) {
+    if (currentUser && isEscalated && ticket && ticket._id) {
       interval = setInterval(async () => {
         try {
           const res = await api.getTicketById(ticket._id);
@@ -252,10 +266,16 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isEscalated, ticket]);
+  }, [currentUser, isEscalated, ticket]);
 
   const handleSendMessage = async (e, textOverride = null) => {
     if (e && e.preventDefault) e.preventDefault();
+
+    if (!currentUser) {
+      onLoginClick();
+      return;
+    }
+
     const userMsg = textOverride || inputText.trim();
     if (!userMsg) return;
 
@@ -341,6 +361,10 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
 
   // Escalate to Human Agent Queue
   const handleEscalate = async () => {
+    if (!currentUser) {
+      onLoginClick();
+      return;
+    }
     if (!ticket) return;
     try {
       setIsLoading(true);
@@ -355,7 +379,7 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
           _id: Date.now().toString(),
           sender: 'BOT',
           senderName: 'System Queue',
-          message: '🚨 AI Agent could not fully resolve your query. Ticket escalated to Human Agent Queue. A human support agent will join shortly!'
+          message: '🚨 Query escalated to Human Agent Queue. A support representative will join your chat shortly!'
         }
       ]);
     } catch (err) {
@@ -366,24 +390,24 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
+    <div className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 z-50 font-sans">
       {isOpen ? (
-        <div className="flex h-[580px] w-[380px] sm:w-[420px] flex-col overflow-hidden rounded-2xl border border-slate-700/80 bg-slate-900/95 shadow-2xl backdrop-blur-xl">
+        <div className="flex h-screen sm:h-[580px] w-screen sm:w-[420px] flex-col overflow-hidden rounded-none sm:rounded-2xl border-0 sm:border border-slate-800 bg-slate-900/95 shadow-2xl backdrop-blur-xl">
           {/* Header */}
-          <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 p-4 text-white">
+          <div className="flex items-center justify-between bg-slate-950 p-4 border-b border-slate-800 text-white shrink-0">
             <div className="flex items-center gap-3">
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
-                <Bot className="h-6 w-6 text-white" />
-                <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+              <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md">
+                <Bot className="h-5 w-5" />
+                <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
               </div>
               <div>
-                <h3 className="font-bold text-sm">SyncSupport AI Agent</h3>
-                <div className="flex items-center gap-1.5 text-xs text-indigo-100">
+                <h3 className="font-bold text-sm text-white">SyncSupport AI & Human Desk</h3>
+                <div className="flex items-center gap-1.5 text-xs text-slate-400">
                   <span className="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>
-                  <span>{isEscalated ? 'Connected to Human Agent' : 'Self-Learning RAG Active'}</span>
+                  <span>{currentUser ? (isEscalated ? 'Human Agent Connected' : 'AI Agent Active') : 'Sign In Required'}</span>
                 </div>
               </div>
             </div>
@@ -392,14 +416,14 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
               {!currentUser && (
                 <button
                   onClick={onLoginClick}
-                  className="rounded-lg bg-white/20 px-2 py-1 text-[11px] font-bold text-white hover:bg-white/30 transition-all"
+                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-500 transition-all cursor-pointer flex items-center gap-1"
                 >
-                  Sign In
+                  <LogIn className="h-3.5 w-3.5" /> Sign In
                 </button>
               )}
               <button
                 onClick={() => setIsOpen(false)}
-                className="rounded-lg p-1.5 text-white/80 hover:bg-white/10 transition-colors"
+                className="rounded-lg p-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 <ChevronDown className="h-5 w-5" />
               </button>
@@ -407,245 +431,272 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
           </div>
 
           {/* Sub-header Navigation Tabs */}
-          <div className="grid grid-cols-2 bg-slate-950 border-b border-slate-800 text-xs font-semibold text-center shrink-0">
-            <button
-              type="button"
-              onClick={() => setActiveTab('CHAT')}
-              className={`py-2 border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                activeTab === 'CHAT'
-                  ? 'border-indigo-500 text-indigo-400 font-bold bg-slate-900/60'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-              <span>Active Chat {ticket?.ticketNumber ? `(${ticket.ticketNumber})` : ''}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('MY_QUERIES');
-                fetchCustomerTickets();
-              }}
-              className={`py-2 border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                activeTab === 'MY_QUERIES'
-                  ? 'border-indigo-500 text-indigo-400 font-bold bg-slate-900/60'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <FileText className="h-3.5 w-3.5" />
-              <span>My Queries ({customerTickets.length})</span>
-            </button>
-          </div>
-
-          {/* AI Learned New Knowledge Banner */}
-          {learnedBanner && (
-            <div className="bg-emerald-950/90 border-b border-emerald-500/30 p-2.5 px-4 text-emerald-200 text-xs flex items-center gap-2 shrink-0">
-              <Brain className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span className="truncate">AI Learned Solution: <strong>{learnedBanner}</strong></span>
+          {currentUser && (
+            <div className="grid grid-cols-2 bg-slate-950 border-b border-slate-800 text-xs font-semibold text-center shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveTab('CHAT')}
+                className={`py-2 border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  activeTab === 'CHAT'
+                    ? 'border-indigo-500 text-indigo-400 font-bold bg-slate-900/60'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                <span>Active Session {ticket?.ticketNumber ? `(${ticket.ticketNumber})` : ''}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('MY_QUERIES');
+                  fetchCustomerTickets();
+                }}
+                className={`py-2 border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  activeTab === 'MY_QUERIES'
+                    ? 'border-indigo-500 text-indigo-400 font-bold bg-slate-900/60'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span>My History ({customerTickets.length})</span>
+              </button>
             </div>
           )}
 
-          {/* TAB 1: ACTIVE CHAT VIEW */}
-          {activeTab === 'CHAT' && (
+          {/* REQUIRE SIGN-IN OVERLAY CARD IF NOT LOGGED IN */}
+          {!currentUser ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-950/90 space-y-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 shadow-xl">
+                <Lock className="h-7 w-7" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-base font-bold text-white">Authentication Required</h4>
+                <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
+                  Please sign in or register to query our AI support assistant, track your tickets, and chat with live representatives.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onLoginClick}
+                className="w-full max-w-xs rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 hover:from-blue-500 hover:to-indigo-500 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <LogIn className="h-4 w-4" />
+                <span>Sign In / Register Account</span>
+              </button>
+            </div>
+          ) : (
             <>
-              {/* Messages Container */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-950/60">
-                {messages.map((msg, index) => {
-                  const isUser = msg.sender === 'CUSTOMER';
-                  const isBot = msg.sender === 'BOT';
-                  return (
-                    <div key={msg._id || index} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
-                      <div className="flex items-center gap-1.5 mb-1 px-1">
-                        <span className="text-[10px] font-bold text-slate-400">
-                          {msg.senderName || (isUser ? 'You' : isBot ? 'SyncSupport AI Agent' : 'Human Agent')}
-                        </span>
-                        <span className="text-[9px] text-slate-500">
-                          {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                        </span>
+              {/* AI Learned New Knowledge Banner */}
+              {learnedBanner && (
+                <div className="bg-emerald-950/90 border-b border-emerald-500/30 p-2.5 px-4 text-emerald-200 text-xs flex items-center gap-2 shrink-0">
+                  <Brain className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span className="truncate">AI Learned Solution: <strong>{learnedBanner}</strong></span>
+                </div>
+              )}
+
+              {/* TAB 1: ACTIVE CHAT VIEW */}
+              {activeTab === 'CHAT' && (
+                <>
+                  {/* Messages Container */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-950/60">
+                    {messages.map((msg, index) => {
+                      const isUser = msg.sender === 'CUSTOMER';
+                      const isBot = msg.sender === 'BOT';
+                      return (
+                        <div key={msg._id || index} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+                          <div className="flex items-center gap-1.5 mb-1 px-1">
+                            <span className="text-[10px] font-bold text-slate-400">
+                              {msg.senderName || (isUser ? 'You' : isBot ? 'SyncSupport AI' : 'Human Agent')}
+                            </span>
+                            <span className="text-[9px] text-slate-500">
+                              {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                            </span>
+                          </div>
+                          <div
+                            className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-sm ${
+                              isUser
+                                ? 'bg-indigo-600 text-white rounded-br-xs font-medium'
+                                : isBot
+                                ? 'bg-slate-900 text-slate-200 border border-slate-800 rounded-bl-xs'
+                                : 'bg-blue-600 text-white rounded-bl-xs font-medium'
+                            }`}
+                          >
+                            {msg.message}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Interactive Resolution Confirmation Prompt */}
+                    {(showResolutionPrompt || ticket?.status === 'PENDING_CUSTOMER_CONFIRMATION') && (
+                      <div className="rounded-2xl border border-emerald-500/50 bg-emerald-950/90 p-4 shadow-xl text-center space-y-3 my-3">
+                        <div className="flex items-center justify-center gap-2 text-emerald-300 font-bold text-xs">
+                          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                          <span>Is your issue resolved?</span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-relaxed">
+                          Selecting <strong>Yes</strong> will confirm resolution and train our AI knowledge base in real time!
+                        </p>
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleConfirmResolution('YES')}
+                            className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg hover:bg-emerald-500 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <CheckCircle2 className="h-4 w-4" /> Yes, Resolved!
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleConfirmResolution('NO')}
+                            className="rounded-xl bg-rose-600/30 border border-rose-500/40 px-4 py-2.5 text-xs font-bold text-rose-200 hover:bg-rose-600/50 transition-all cursor-pointer"
+                          >
+                            No, Need Help
+                          </button>
+                        </div>
                       </div>
+                    )}
+
+                    {isLoading && (
+                      <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-900 p-2.5 rounded-xl w-fit border border-slate-800">
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin text-indigo-400" />
+                        <span>AI Agent querying vector store...</span>
+                      </div>
+                    )}
+
+                    {isTyping && (
+                      <div className="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-950/60 p-2.5 rounded-xl w-fit border border-indigo-900">
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce"></span>
+                        <span>{typingUser} is typing...</span>
+                      </div>
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+
+                  {/* Escalation Trigger Button */}
+                  {!isEscalated && (
+                    <div className="border-t border-slate-800/80 bg-slate-900/90 p-2 text-center shrink-0">
+                      <button
+                        onClick={handleEscalate}
+                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer"
+                      >
+                        <UserCheck className="h-3.5 w-3.5" />
+                        <span>Escalate to Human Support Agent</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Suggested Queries */}
+                  {!isEscalated && (
+                    <div className="px-3 py-2 border-t border-slate-800 bg-slate-950/90 shrink-0">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-400 mb-1 uppercase tracking-wider">
+                        <Sparkles className="h-3 w-3 text-indigo-400" />
+                        <span>Suggested Queries:</span>
+                      </div>
+                      <div className="flex flex-col gap-1 max-h-20 overflow-y-auto pr-1">
+                        {recentQueries.slice(0, 3).map((queryText, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={(e) => handleSendMessage(e, queryText)}
+                            className="text-left rounded-lg bg-slate-900 border border-slate-800 px-2.5 py-1 text-[11px] text-slate-300 hover:border-indigo-500 hover:bg-slate-800 transition-all cursor-pointer truncate"
+                          >
+                            "{queryText}"
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Input Footer */}
+                  <form onSubmit={handleSendMessage} className="border-t border-slate-800 bg-slate-900 p-3 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        placeholder={isEscalated ? "Message live human agent..." : "Ask your question..."}
+                        className="flex-1 rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!inputText.trim()}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md hover:bg-indigo-500 disabled:opacity-40 transition-all cursor-pointer"
+                      >
+                        <Send className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
+
+              {/* TAB 2: MY SUPPORT QUERIES LIST VIEW */}
+              {activeTab === 'MY_QUERIES' && (
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-950/80">
+                  <div className="flex items-center justify-between bg-indigo-950/40 border border-indigo-500/30 p-3 rounded-xl">
+                    <div>
+                      <h4 className="font-bold text-xs text-white">Start New Inquiry</h4>
+                      <p className="text-[11px] text-slate-400">Creates a fresh session</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleStartNewQuery}
+                      className="rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-500 shadow-md transition-all shrink-0 cursor-pointer flex items-center gap-1"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> New Query
+                    </button>
+                  </div>
+
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1 pt-1">
+                    Your Past & Active Queries
+                  </div>
+
+                  {customerTickets.length === 0 ? (
+                    <div className="text-center py-12 text-xs text-slate-500 space-y-2">
+                      <FileText className="h-8 w-8 text-slate-700 mx-auto" />
+                      <p>No previous queries found.</p>
+                    </div>
+                  ) : (
+                    customerTickets.map((t) => (
                       <div
-                        className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-sm ${
-                          isUser
-                            ? 'bg-blue-600 text-white rounded-br-xs'
-                            : isBot
-                            ? 'bg-purple-950/90 text-purple-100 border border-purple-800/60 rounded-bl-xs'
-                            : 'bg-indigo-600 text-white rounded-bl-xs'
-                        }`}
+                        key={t._id}
+                        className="rounded-xl border border-slate-800 bg-slate-900/90 p-3.5 hover:border-indigo-500/50 transition-all space-y-2"
                       >
-                        {msg.message}
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs font-bold text-indigo-400">{t.ticketNumber}</span>
+                          {getStatusBadge(t.status)}
+                        </div>
+
+                        <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
+                          {t.summary || (t.createdAt ? `Inquiry on ${new Date(t.createdAt).toLocaleDateString()}` : 'Support Inquiry')}
+                        </p>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-[10px] text-slate-400">
+                          <span>{new Date(t.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectPastTicket(t)}
+                            className="rounded-lg bg-indigo-600/20 border border-indigo-500/40 px-3 py-1 text-xs font-bold text-indigo-300 hover:bg-indigo-600 hover:text-white transition-all cursor-pointer"
+                          >
+                            {ticket?._id === t._id ? 'Active Session →' : 'View / Continue →'}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-
-                {/* Interactive Resolution Confirmation Prompt */}
-                {(showResolutionPrompt || ticket?.status === 'PENDING_CUSTOMER_CONFIRMATION') && (
-                  <div className="rounded-2xl border border-emerald-500/50 bg-emerald-950/90 p-4 shadow-xl text-center space-y-3 my-3">
-                    <div className="flex items-center justify-center gap-2 text-emerald-300 font-bold text-xs">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                      <span>Is your problem resolved?</span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                      Our Support Agent provided a resolution. If resolved, selecting <strong>Yes</strong> will train our AI RAG Knowledge Base in real time for future inquiries!
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => handleConfirmResolution('YES')}
-                        className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg hover:bg-emerald-500 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <CheckCircle2 className="h-4 w-4" /> Yes, Resolved!
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleConfirmResolution('NO')}
-                        className="rounded-xl bg-rose-600/30 border border-rose-500/40 px-4 py-2.5 text-xs font-bold text-rose-200 hover:bg-rose-600/50 transition-all cursor-pointer"
-                      >
-                        No, Need Help
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {isLoading && (
-                  <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-900 p-2.5 rounded-xl w-fit border border-slate-800">
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin text-indigo-400" />
-                    <span>AI Agent searching vector knowledge...</span>
-                  </div>
-                )}
-
-                {isTyping && (
-                  <div className="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-950/60 p-2.5 rounded-xl w-fit border border-indigo-900">
-                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce"></span>
-                    <span>{typingUser} is typing a response...</span>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-
-              {/* Escalation Trigger Button */}
-              {!isEscalated && (
-                <div className="border-t border-slate-800 bg-slate-900/90 p-2.5 text-center shrink-0">
-                  <button
-                    onClick={handleEscalate}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition-all"
-                  >
-                    <UserCheck className="h-3.5 w-3.5" />
-                    <span>AI couldn't solve it? Escalate to Human Support Agent</span>
-                  </button>
+                    ))
+                  )}
                 </div>
               )}
-
-              {/* Recent & Suggested Queries (Quick Click to Ask) */}
-              {!isEscalated && (
-                <div className="px-3 py-2 border-t border-slate-800 bg-slate-950/90 shrink-0">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-300 mb-1.5 uppercase tracking-wider">
-                    <Sparkles className="h-3 w-3 text-indigo-400" />
-                    <span>Recent Queries (Click to Ask):</span>
-                  </div>
-                  <div className="flex flex-col gap-1 max-h-24 overflow-y-auto pr-1">
-                    {recentQueries.map((queryText, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={(e) => handleSendMessage(e, queryText)}
-                        className="text-left rounded-lg bg-slate-900 border border-slate-800 px-2.5 py-1 text-[11px] text-slate-300 hover:border-indigo-500 hover:bg-slate-800 hover:text-white transition-all cursor-pointer truncate"
-                      >
-                        "{queryText}"
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Input Footer */}
-              <form onSubmit={handleSendMessage} className="border-t border-slate-800 bg-slate-900 p-3 shrink-0">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    placeholder={isEscalated ? "Message live human support agent..." : "Type custom query or select recent query above..."}
-                    className="flex-1 rounded-xl bg-slate-800 border border-slate-700 px-3.5 py-2 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!inputText.trim()}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md hover:bg-indigo-500 disabled:opacity-40 transition-all"
-                  >
-                    <Send className="h-4 w-4" />
-                  </button>
-                </div>
-              </form>
             </>
-          )}
-
-          {/* TAB 2: MY SUPPORT QUERIES LIST VIEW */}
-          {activeTab === 'MY_QUERIES' && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-950/80">
-              <div className="flex items-center justify-between bg-indigo-950/40 border border-indigo-500/30 p-3 rounded-xl">
-                <div>
-                  <h4 className="font-bold text-xs text-white">Start a New Inquiry?</h4>
-                  <p className="text-[11px] text-slate-400">Creates a fresh AI & Agent support session</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleStartNewQuery}
-                  className="rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-500 shadow-md transition-all shrink-0 cursor-pointer flex items-center gap-1"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Start New Query
-                </button>
-              </div>
-
-              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1 pt-2">
-                Your Previous & Active Queries
-              </div>
-
-              {customerTickets.length === 0 ? (
-                <div className="text-center py-12 text-xs text-slate-500 space-y-2">
-                  <FileText className="h-8 w-8 text-slate-700 mx-auto" />
-                  <p>No previous queries found for <strong>{customerEmail}</strong>.</p>
-                </div>
-              ) : (
-                customerTickets.map((t) => (
-                  <div
-                    key={t._id}
-                    className="rounded-xl border border-slate-800 bg-slate-900/90 p-3.5 hover:border-indigo-500/50 transition-all space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-indigo-400">{t.ticketNumber}</span>
-                      {getStatusBadge(t.status)}
-                    </div>
-
-                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
-                      {t.summary || (t.createdAt ? `Support inquiry created on ${new Date(t.createdAt).toLocaleDateString()}` : 'Support Inquiry')}
-                    </p>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-[10px] text-slate-400">
-                      <span>{new Date(t.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleSelectPastTicket(t)}
-                        className="rounded-lg bg-indigo-600/20 border border-indigo-500/40 px-3 py-1 text-xs font-bold text-indigo-300 hover:bg-indigo-600 hover:text-white transition-all cursor-pointer"
-                      >
-                        {ticket?._id === t._id ? 'Active Session →' : 'View / Continue →'}
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
           )}
         </div>
       ) : (
         <button
           onClick={() => {
             setIsOpen(true);
-            if (!isInitialized) initSession();
+            if (currentUser && !isInitialized) initSession();
           }}
-          className="group flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white shadow-2xl hover:scale-105 active:scale-95 transition-all animate-pulse-ring"
+          className="group flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-2xl hover:scale-105 active:scale-95 transition-all animate-pulse-ring cursor-pointer"
         >
-          <MessageSquare className="h-7 w-7" />
+          <MessageSquare className="h-6 w-6" />
           <span className="absolute top-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-400 border-2 border-slate-900"></span>
         </button>
       )}

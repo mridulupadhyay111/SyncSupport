@@ -36,7 +36,7 @@ export default function App() {
           onLoginClick={() => setIsAuthModalOpen(true)}
           onLogout={handleLogout}
         />
-        <div className="flex-1 w-full">
+        <div className="flex-1 w-full flex flex-col">
           <Routes>
             <Route path="/" element={<Navigate to="/customer" replace />} />
             <Route 
@@ -48,8 +48,26 @@ export default function App() {
                 />
               } 
             />
-            <Route path="/agent" element={<AgentPortal />} />
-            <Route path="/admin" element={<AdminPortal />} />
+            <Route 
+              path="/agent" 
+              element={
+                <AgentPortal 
+                  currentUser={currentUser} 
+                  onLoginClick={() => setIsAuthModalOpen(true)}
+                  activeAgentStatus={activeAgentStatus}
+                  onStatusChange={setActiveAgentStatus}
+                />
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <AdminPortal 
+                  currentUser={currentUser} 
+                  onLoginClick={() => setIsAuthModalOpen(true)} 
+                />
+              } 
+            />
             <Route path="*" element={<Navigate to="/customer" replace />} />
           </Routes>
         </div>

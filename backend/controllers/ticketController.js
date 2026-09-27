@@ -180,7 +180,7 @@ exports.sendMessage = async (req, res) => {
     const chat = await Chat.create({
       ticketId: ticket._id,
       sender,
-      senderName: senderName || (sender === 'CUSTOMER' ? ticket.customerName : 'Human Agent'),
+      senderName: senderName || (sender === 'CUSTOMER' ? ticket.customerName : (req.user ? req.user.name : 'Human Agent')),
       message
     });
 
