@@ -26,6 +26,34 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
 
   const [showResolutionPrompt, setShowResolutionPrompt] = useState(false);
 
+  // Helper to deduplicate messages in React state
+  const mergeUniqueMessages = (prev, newMsg) => {
+    if (!newMsg || !newMsg.message) return prev;
+
+    const newIdStr = newMsg._id ? String(newMsg._id) : null;
+
+    // Check if ID already exists
+    if (newIdStr && prev.some(m => m._id && String(m._id) === newIdStr)) {
+      return prev;
+    }
+
+    // Check if same sender and same text exists within 8 seconds
+    const existingIndex = prev.findIndex(m =>
+      m.sender === newMsg.sender &&
+      m.message.trim() === newMsg.message.trim() &&
+      Math.abs(new Date(m.timestamp || Date.now()) - new Date(newMsg.timestamp || Date.now())) < 8000
+    );
+
+    if (existingIndex !== -1) {
+      // Replace existing temporary message with authoritative database object
+      const updated = [...prev];
+      updated[existingIndex] = newMsg;
+      return updated;
+    }
+
+    return [...prev, newMsg];
+  };
+
   const fetchCustomerTickets = async () => {
     if (!customerEmail) return;
     try {
@@ -133,10 +161,7 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
 
       const handleReceiveMessage = (data) => {
         if (data && String(data.ticketId) === roomStr && data.chat) {
-          setMessages((prev) => {
-            if (prev.some(m => String(m._id) === String(data.chat._id))) return prev;
-            return [...prev, data.chat];
-          });
+          setMessages((prev) => mergeUniqueMessages(prev, data.chat));
           if (data.ticketStatus === 'PENDING_CUSTOMER_CONFIRMATION') {
             setShowResolutionPrompt(true);
           }
@@ -193,7 +218,6 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
       setShowResolutionPrompt(false);
 
       const res = await api.confirmResolution(ticket._id, userChoice);
-      socketRef.current?.emit('confirm_resolution', { ticketId: ticket._id, userChoice });
 
       if (userChoice === 'YES') {
         if (res.data && res.data.ticket) setTicket(res.data.ticket);
@@ -261,7 +285,7 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
             }
           }
         } catch (e) {}
-      }, 3000);
+      }, 4000);
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -289,24 +313,6 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
 
     const ticketIdStr = String(currentTicket._id);
 
-    // Optimistically render customer message immediately
-    const tempMsg = {
-      _id: Date.now().toString(),
-      sender: 'CUSTOMER',
-      senderName: customerName,
-      message: userMsg,
-      timestamp: new Date().toISOString()
-    };
-    setMessages((prev) => [...prev, tempMsg]);
-
-    // Socket real-time emit
-    socketRef.current?.emit('send_message', {
-      ticketId: ticketIdStr,
-      sender: 'CUSTOMER',
-      senderName: customerName,
-      message: userMsg
-    });
-
     try {
       if (isEscalated || currentTicket.status === 'PENDING_AGENT' || currentTicket.status === 'IN_PROGRESS') {
         // Send directly to connected human agent
@@ -317,27 +323,27 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
         });
 
         if (res.data && res.data.chat) {
-          setMessages((prev) => {
-            const filtered = prev.filter(m => m._id !== tempMsg._id);
-            if (filtered.some(m => String(m._id) === String(res.data.chat._id))) return filtered;
-            return [...filtered, res.data.chat];
-          });
+          setMessages((prev) => mergeUniqueMessages(prev, res.data.chat));
         }
       } else {
         setIsLoading(true);
 
-        // 1. Save customer message to DB
-        await api.sendMessage(ticketIdStr, {
+        // 1. Save customer message to DB & trigger room socket broadcast
+        const custRes = await api.sendMessage(ticketIdStr, {
           sender: 'CUSTOMER',
           senderName: customerName,
           message: userMsg
         });
 
+        if (custRes.data && custRes.data.chat) {
+          setMessages((prev) => mergeUniqueMessages(prev, custRes.data.chat));
+        }
+
         // 2. Query AI Agent RAG Vector Engine
         const ragRes = await api.queryRAG(userMsg);
         const botAnswer = ragRes.data.answer || "I'm checking our knowledge base...";
 
-        // 3. Save Bot response to DB
+        // 3. Save Bot response to DB & trigger room socket broadcast
         const botRes = await api.sendMessage(ticketIdStr, {
           sender: 'BOT',
           senderName: 'SyncSupport AI Agent',
@@ -345,11 +351,7 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
         });
 
         if (botRes.data && botRes.data.chat) {
-          setMessages((prev) => {
-            const exists = prev.some(m => String(m._id) === String(botRes.data.chat._id));
-            if (exists) return prev;
-            return [...prev, botRes.data.chat];
-          });
+          setMessages((prev) => mergeUniqueMessages(prev, botRes.data.chat));
         }
       }
     } catch (err) {
@@ -370,18 +372,6 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
       setIsLoading(true);
       await api.escalateTicket(ticket._id);
       setIsEscalated(true);
-
-      socketRef.current?.emit('escalate_ticket', { ticketId: ticket._id });
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          _id: Date.now().toString(),
-          sender: 'BOT',
-          senderName: 'System Queue',
-          message: '🚨 Query escalated to Human Support Agent Queue. A support representative will join your chat shortly!'
-        }
-      ]);
     } catch (err) {
       console.error('Escalation error', err);
     } finally {

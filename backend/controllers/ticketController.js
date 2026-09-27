@@ -204,7 +204,6 @@ exports.sendMessage = async (req, res) => {
         ticketStatus: ticket.status
       };
       io.to(ticketIdStr).emit('receive_message', payload);
-      io.emit('receive_message', payload);
       io.emit('ticket_activity', { ticketId: ticketIdStr, sender, message });
     }
 

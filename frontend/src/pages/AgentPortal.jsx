@@ -31,6 +31,31 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
   const isStaff = currentUser && ['AGENT', 'ADMIN'].includes(currentUser.role);
   const agentName = currentUser?.name || 'Support Executive';
 
+  // Helper to deduplicate messages in React state
+  const mergeUniqueMessages = (prev, newMsg) => {
+    if (!newMsg || !newMsg.message) return prev;
+
+    const newIdStr = newMsg._id ? String(newMsg._id) : null;
+
+    if (newIdStr && prev.some(m => m._id && String(m._id) === newIdStr)) {
+      return prev;
+    }
+
+    const existingIndex = prev.findIndex(m =>
+      m.sender === newMsg.sender &&
+      m.message.trim() === newMsg.message.trim() &&
+      Math.abs(new Date(m.timestamp || Date.now()) - new Date(newMsg.timestamp || Date.now())) < 8000
+    );
+
+    if (existingIndex !== -1) {
+      const updated = [...prev];
+      updated[existingIndex] = newMsg;
+      return updated;
+    }
+
+    return [...prev, newMsg];
+  };
+
   const fetchTickets = async () => {
     if (!isStaff) return;
     try {
@@ -55,16 +80,16 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
     }
   }, [isStaff, filterStatus, searchQuery]);
 
-  // Polling ticket queue every 3 seconds
+  // Polling ticket queue every 4 seconds
   useEffect(() => {
     if (!isStaff) return;
     const interval = setInterval(() => {
       fetchTickets();
-    }, 3000);
+    }, 4000);
     return () => clearInterval(interval);
   }, [isStaff, filterStatus, searchQuery]);
 
-  // Polling active chat transcript every 3 seconds
+  // Polling active chat transcript every 4 seconds
   useEffect(() => {
     let interval = null;
     if (isStaff && selectedTicket && selectedTicket._id) {
@@ -75,7 +100,7 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
             setChats(res.data.chats);
           }
         } catch (e) {}
-      }, 3000);
+      }, 4000);
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -141,14 +166,7 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
       const handleReceiveMsg = (data) => {
         if (data && String(data.ticketId) === roomStr) {
           if (data.chat) {
-            setChats((prev) => {
-              const isDup = prev.some(m =>
-                String(m._id) === String(data.chat._id) ||
-                (m.sender === data.chat.sender && m.message === data.chat.message && Math.abs(new Date(m.timestamp || Date.now()) - new Date(data.chat.timestamp || Date.now())) < 4000)
-              );
-              if (isDup) return prev;
-              return [...prev, data.chat];
-            });
+            setChats((prev) => mergeUniqueMessages(prev, data.chat));
           }
           if (data.ticketSentiment) {
             setSelectedTicket((prev) => ({ ...prev, sentiment: data.ticketSentiment }));
@@ -190,10 +208,7 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
       });
 
       if (res.data && res.data.chat) {
-        setChats((prev) => {
-          if (prev.some(m => String(m._id) === String(res.data.chat._id))) return prev;
-          return [...prev, res.data.chat];
-        });
+        setChats((prev) => mergeUniqueMessages(prev, res.data.chat));
       }
     } catch (err) {
       console.error('Error sending agent message:', err);
@@ -207,7 +222,6 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
       const res = await api.proposeResolution(selectedTicket._id);
       if (res.data && res.data.ticket) {
         setSelectedTicket(res.data.ticket);
-        socketRef.current?.emit('propose_resolution', { ticketId: selectedTicket._id });
         setLearnedNotice(`📋 Resolution proposed! Customer received interactive Yes/No prompt.`);
         fetchTickets();
         const chatRes = await api.getTicketById(selectedTicket._id);
@@ -468,7 +482,7 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
                   <button
                     onClick={handleResolveAndLearn}
                     disabled={isSummarizing || selectedTicket.status === 'RESOLVED'}
-                    className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800 disabled:opacity-50 transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800 disabled:opacity-40 transition-all cursor-pointer"
                   >
                     {isSummarizing ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5 text-emerald-400" />}
                     <span>{selectedTicket.status === 'RESOLVED' ? 'Resolved & Learned' : 'Resolve & Train AI'}</span>
