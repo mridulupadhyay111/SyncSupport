@@ -28,7 +28,7 @@ export default function App() {
 
   return (
     <Router>
-      <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+      <div className="min-h-screen w-full bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
         <Navbar 
           activeAgentStatus={activeAgentStatus} 
           onStatusChange={setActiveAgentStatus}

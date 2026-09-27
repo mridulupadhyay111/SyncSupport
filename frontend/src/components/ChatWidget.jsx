@@ -105,13 +105,13 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
       case 'PENDING_AGENT':
         return <span className="rounded bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[9px] font-bold text-amber-400">PENDING QUEUE</span>;
       case 'IN_PROGRESS':
-        return <span className="rounded bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 text-[9px] font-bold text-blue-400">HUMAN LIVE</span>;
+        return <span className="rounded bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-bold text-emerald-400">HUMAN LIVE</span>;
       case 'PENDING_CUSTOMER_CONFIRMATION':
         return <span className="rounded bg-purple-500/10 border border-purple-500/30 px-2 py-0.5 text-[9px] font-bold text-purple-400 animate-pulse">AWAITING YES/NO</span>;
       case 'RESOLVED':
-        return <span className="rounded bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-bold text-emerald-400">RESOLVED & LEARNED</span>;
+        return <span className="rounded bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-bold text-emerald-400">RESOLVED</span>;
       default:
-        return <span className="rounded bg-indigo-500/10 border border-indigo-500/30 px-2 py-0.5 text-[9px] font-bold text-indigo-400">AI ACTIVE</span>;
+        return <span className="rounded bg-zinc-800 border border-zinc-700 px-2 py-0.5 text-[9px] font-bold text-zinc-300">AI ACTIVE</span>;
     }
   };
 
@@ -197,7 +197,7 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
 
       if (userChoice === 'YES') {
         if (res.data && res.data.ticket) setTicket(res.data.ticket);
-        setLearnedBanner(res.data?.learnedChunk?.title || 'Solution learned & saved into RAG Knowledge Base in real time!');
+        setLearnedBanner(res.data?.learnedChunk?.title || 'Solution learned & saved into RAG Knowledge Base!');
       } else {
         if (res.data && res.data.ticket) setTicket(res.data.ticket);
         setIsEscalated(true);
@@ -379,7 +379,7 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
           _id: Date.now().toString(),
           sender: 'BOT',
           senderName: 'System Queue',
-          message: '🚨 Query escalated to Human Agent Queue. A support representative will join your chat shortly!'
+          message: '🚨 Query escalated to Human Support Agent Queue. A support representative will join your chat shortly!'
         }
       ]);
     } catch (err) {
@@ -392,11 +392,11 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
   return (
     <div className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 z-50 font-sans">
       {isOpen ? (
-        <div className="flex h-screen sm:h-[580px] w-screen sm:w-[420px] flex-col overflow-hidden rounded-none sm:rounded-2xl border-0 sm:border border-slate-800 bg-slate-900/95 shadow-2xl backdrop-blur-xl">
+        <div className="flex h-screen sm:h-[580px] w-screen sm:w-[420px] flex-col overflow-hidden rounded-none sm:rounded-2xl border-0 sm:border border-zinc-800 bg-zinc-900 shadow-2xl backdrop-blur-xl">
           {/* Header */}
-          <div className="flex items-center justify-between bg-slate-950 p-4 border-b border-slate-800 text-white shrink-0">
+          <div className="flex items-center justify-between bg-zinc-950 p-4 border-b border-zinc-800 text-white shrink-0">
             <div className="flex items-center gap-3">
-              <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md">
+              <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-emerald-400 shadow-md">
                 <Bot className="h-5 w-5" />
                 <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -404,10 +404,10 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
                 </span>
               </div>
               <div>
-                <h3 className="font-bold text-sm text-white">SyncSupport AI & Human Desk</h3>
-                <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                <h3 className="font-bold text-sm text-white">SyncSupport Desk</h3>
+                <div className="flex items-center gap-1.5 text-xs text-zinc-400">
                   <span className="inline-block h-2 w-2 rounded-full bg-emerald-400"></span>
-                  <span>{currentUser ? (isEscalated ? 'Human Agent Connected' : 'AI Agent Active') : 'Sign In Required'}</span>
+                  <span>{currentUser ? (isEscalated ? 'Human Agent Connected' : 'AI Assistant Active') : 'Sign In Required'}</span>
                 </div>
               </div>
             </div>
@@ -416,14 +416,14 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
               {!currentUser && (
                 <button
                   onClick={onLoginClick}
-                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-500 transition-all cursor-pointer flex items-center gap-1"
+                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 transition-all cursor-pointer flex items-center gap-1"
                 >
                   <LogIn className="h-3.5 w-3.5" /> Sign In
                 </button>
               )}
               <button
                 onClick={() => setIsOpen(false)}
-                className="rounded-lg p-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="rounded-lg p-1.5 text-zinc-400 hover:text-white transition-colors cursor-pointer"
               >
                 <ChevronDown className="h-5 w-5" />
               </button>
@@ -432,14 +432,14 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
 
           {/* Sub-header Navigation Tabs */}
           {currentUser && (
-            <div className="grid grid-cols-2 bg-slate-950 border-b border-slate-800 text-xs font-semibold text-center shrink-0">
+            <div className="grid grid-cols-2 bg-zinc-950 border-b border-zinc-800 text-xs font-semibold text-center shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveTab('CHAT')}
-                className={`py-2 border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`py-2.5 border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                   activeTab === 'CHAT'
-                    ? 'border-indigo-500 text-indigo-400 font-bold bg-slate-900/60'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                    ? 'border-emerald-500 text-emerald-400 font-bold bg-zinc-900/80'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 <MessageSquare className="h-3.5 w-3.5" />
@@ -451,10 +451,10 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
                   setActiveTab('MY_QUERIES');
                   fetchCustomerTickets();
                 }}
-                className={`py-2 border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`py-2.5 border-b-2 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                   activeTab === 'MY_QUERIES'
-                    ? 'border-indigo-500 text-indigo-400 font-bold bg-slate-900/60'
-                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                    ? 'border-emerald-500 text-emerald-400 font-bold bg-zinc-900/80'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 <FileText className="h-3.5 w-3.5" />
@@ -465,20 +465,20 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
 
           {/* REQUIRE SIGN-IN OVERLAY CARD IF NOT LOGGED IN */}
           {!currentUser ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-slate-950/90 space-y-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 shadow-xl">
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-zinc-950 space-y-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-900 border border-zinc-800 text-emerald-400 shadow-xl">
                 <Lock className="h-7 w-7" />
               </div>
               <div className="space-y-1">
                 <h4 className="text-base font-bold text-white">Authentication Required</h4>
-                <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
+                <p className="text-xs text-zinc-400 max-w-xs leading-relaxed">
                   Please sign in or register to query our AI support assistant, track your tickets, and chat with live representatives.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={onLoginClick}
-                className="w-full max-w-xs rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 hover:from-blue-500 hover:to-indigo-500 transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full max-w-xs rounded-xl bg-emerald-600 py-3 text-xs font-bold text-white shadow-md hover:bg-emerald-500 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <LogIn className="h-4 w-4" />
                 <span>Sign In / Register Account</span>
@@ -488,7 +488,7 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
             <>
               {/* AI Learned New Knowledge Banner */}
               {learnedBanner && (
-                <div className="bg-emerald-950/90 border-b border-emerald-500/30 p-2.5 px-4 text-emerald-200 text-xs flex items-center gap-2 shrink-0">
+                <div className="bg-emerald-950/80 border-b border-emerald-500/30 p-2.5 px-4 text-emerald-200 text-xs flex items-center gap-2 shrink-0">
                   <Brain className="h-4 w-4 text-emerald-400 shrink-0" />
                   <span className="truncate">AI Learned Solution: <strong>{learnedBanner}</strong></span>
                 </div>
@@ -498,27 +498,27 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
               {activeTab === 'CHAT' && (
                 <>
                   {/* Messages Container */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-950/60">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-950/60">
                     {messages.map((msg, index) => {
                       const isUser = msg.sender === 'CUSTOMER';
                       const isBot = msg.sender === 'BOT';
                       return (
                         <div key={msg._id || index} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
                           <div className="flex items-center gap-1.5 mb-1 px-1">
-                            <span className="text-[10px] font-bold text-slate-400">
+                            <span className="text-[10px] font-bold text-zinc-400">
                               {msg.senderName || (isUser ? 'You' : isBot ? 'SyncSupport AI' : 'Human Agent')}
                             </span>
-                            <span className="text-[9px] text-slate-500">
+                            <span className="text-[9px] text-zinc-500">
                               {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                             </span>
                           </div>
                           <div
                             className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-sm ${
                               isUser
-                                ? 'bg-indigo-600 text-white rounded-br-xs font-medium'
+                                ? 'bg-emerald-600 text-white rounded-br-xs font-medium'
                                 : isBot
-                                ? 'bg-slate-900 text-slate-200 border border-slate-800 rounded-bl-xs'
-                                : 'bg-blue-600 text-white rounded-bl-xs font-medium'
+                                ? 'bg-zinc-900 text-zinc-200 border border-zinc-800 rounded-bl-xs'
+                                : 'bg-zinc-800 text-white border border-zinc-700 rounded-bl-xs font-medium'
                             }`}
                           >
                             {msg.message}
@@ -534,7 +534,7 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
                           <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                           <span>Is your issue resolved?</span>
                         </div>
-                        <p className="text-[11px] text-slate-300 leading-relaxed">
+                        <p className="text-[11px] text-zinc-300 leading-relaxed">
                           Selecting <strong>Yes</strong> will confirm resolution and train our AI knowledge base in real time!
                         </p>
                         <div className="grid grid-cols-2 gap-2 pt-1">
@@ -557,15 +557,15 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
                     )}
 
                     {isLoading && (
-                      <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-900 p-2.5 rounded-xl w-fit border border-slate-800">
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin text-indigo-400" />
-                        <span>AI Agent querying vector store...</span>
+                      <div className="flex items-center gap-2 text-xs text-zinc-400 bg-zinc-900 p-2.5 rounded-xl w-fit border border-zinc-800">
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin text-emerald-400" />
+                        <span>AI Assistant querying knowledge base...</span>
                       </div>
                     )}
 
                     {isTyping && (
-                      <div className="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-950/60 p-2.5 rounded-xl w-fit border border-indigo-900">
-                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce"></span>
+                      <div className="flex items-center gap-2 text-xs text-emerald-300 bg-emerald-950/60 p-2.5 rounded-xl w-fit border border-emerald-900">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-bounce"></span>
                         <span>{typingUser} is typing...</span>
                       </div>
                     )}
@@ -574,7 +574,7 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
 
                   {/* Escalation Trigger Button */}
                   {!isEscalated && (
-                    <div className="border-t border-slate-800/80 bg-slate-900/90 p-2 text-center shrink-0">
+                    <div className="border-t border-zinc-800 bg-zinc-900/90 p-2 text-center shrink-0">
                       <button
                         onClick={handleEscalate}
                         className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer"
@@ -587,9 +587,9 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
 
                   {/* Suggested Queries */}
                   {!isEscalated && (
-                    <div className="px-3 py-2 border-t border-slate-800 bg-slate-950/90 shrink-0">
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-400 mb-1 uppercase tracking-wider">
-                        <Sparkles className="h-3 w-3 text-indigo-400" />
+                    <div className="px-3 py-2 border-t border-zinc-800 bg-zinc-950 shrink-0">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 mb-1 uppercase tracking-wider">
+                        <Sparkles className="h-3 w-3 text-emerald-400" />
                         <span>Suggested Queries:</span>
                       </div>
                       <div className="flex flex-col gap-1 max-h-20 overflow-y-auto pr-1">
@@ -598,7 +598,7 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
                             key={idx}
                             type="button"
                             onClick={(e) => handleSendMessage(e, queryText)}
-                            className="text-left rounded-lg bg-slate-900 border border-slate-800 px-2.5 py-1 text-[11px] text-slate-300 hover:border-indigo-500 hover:bg-slate-800 transition-all cursor-pointer truncate"
+                            className="text-left rounded-lg bg-zinc-900 border border-zinc-800 px-2.5 py-1 text-[11px] text-zinc-300 hover:border-zinc-700 hover:text-white transition-all cursor-pointer truncate"
                           >
                             "{queryText}"
                           </button>
@@ -608,19 +608,19 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
                   )}
 
                   {/* Input Footer */}
-                  <form onSubmit={handleSendMessage} className="border-t border-slate-800 bg-slate-900 p-3 shrink-0">
+                  <form onSubmit={handleSendMessage} className="border-t border-zinc-800 bg-zinc-900 p-3 shrink-0">
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         placeholder={isEscalated ? "Message live human agent..." : "Ask your question..."}
-                        className="flex-1 rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                        className="flex-1 rounded-xl bg-zinc-950 border border-zinc-800 px-3.5 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
                       />
                       <button
                         type="submit"
                         disabled={!inputText.trim()}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md hover:bg-indigo-500 disabled:opacity-40 transition-all cursor-pointer"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md hover:bg-emerald-500 disabled:opacity-40 transition-all cursor-pointer"
                       >
                         <Send className="h-4 w-4" />
                       </button>
@@ -631,51 +631,51 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
 
               {/* TAB 2: MY SUPPORT QUERIES LIST VIEW */}
               {activeTab === 'MY_QUERIES' && (
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-950/80">
-                  <div className="flex items-center justify-between bg-indigo-950/40 border border-indigo-500/30 p-3 rounded-xl">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-950/80">
+                  <div className="flex items-center justify-between bg-zinc-900 border border-zinc-800 p-3 rounded-xl">
                     <div>
                       <h4 className="font-bold text-xs text-white">Start New Inquiry</h4>
-                      <p className="text-[11px] text-slate-400">Creates a fresh session</p>
+                      <p className="text-[11px] text-zinc-400">Creates a fresh session</p>
                     </div>
                     <button
                       type="button"
                       onClick={handleStartNewQuery}
-                      className="rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-500 shadow-md transition-all shrink-0 cursor-pointer flex items-center gap-1"
+                      className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 shadow-md transition-all shrink-0 cursor-pointer flex items-center gap-1"
                     >
                       <Plus className="h-3.5 w-3.5" /> New Query
                     </button>
                   </div>
 
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1 pt-1">
+                  <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-1 pt-1">
                     Your Past & Active Queries
                   </div>
 
                   {customerTickets.length === 0 ? (
-                    <div className="text-center py-12 text-xs text-slate-500 space-y-2">
-                      <FileText className="h-8 w-8 text-slate-700 mx-auto" />
+                    <div className="text-center py-12 text-xs text-zinc-500 space-y-2">
+                      <FileText className="h-8 w-8 text-zinc-700 mx-auto" />
                       <p>No previous queries found.</p>
                     </div>
                   ) : (
                     customerTickets.map((t) => (
                       <div
                         key={t._id}
-                        className="rounded-xl border border-slate-800 bg-slate-900/90 p-3.5 hover:border-indigo-500/50 transition-all space-y-2"
+                        className="rounded-xl border border-zinc-800 bg-zinc-900/90 p-3.5 hover:border-zinc-700 transition-all space-y-2"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-mono text-xs font-bold text-indigo-400">{t.ticketNumber}</span>
+                          <span className="font-mono text-xs font-bold text-zinc-300">{t.ticketNumber}</span>
                           {getStatusBadge(t.status)}
                         </div>
 
-                        <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
+                        <p className="text-xs text-zinc-300 leading-relaxed line-clamp-2">
                           {t.summary || (t.createdAt ? `Inquiry on ${new Date(t.createdAt).toLocaleDateString()}` : 'Support Inquiry')}
                         </p>
 
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-[10px] text-slate-400">
+                        <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60 text-[10px] text-zinc-400">
                           <span>{new Date(t.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
                           <button
                             type="button"
                             onClick={() => handleSelectPastTicket(t)}
-                            className="rounded-lg bg-indigo-600/20 border border-indigo-500/40 px-3 py-1 text-xs font-bold text-indigo-300 hover:bg-indigo-600 hover:text-white transition-all cursor-pointer"
+                            className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-1 text-xs font-bold text-zinc-200 hover:bg-zinc-700 transition-all cursor-pointer"
                           >
                             {ticket?._id === t._id ? 'Active Session →' : 'View / Continue →'}
                           </button>
@@ -694,10 +694,10 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
             setIsOpen(true);
             if (currentUser && !isInitialized) initSession();
           }}
-          className="group flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-2xl hover:scale-105 active:scale-95 transition-all animate-pulse-ring cursor-pointer"
+          className="group flex h-14 w-14 items-center justify-center rounded-full bg-zinc-900 border border-zinc-800 text-emerald-400 shadow-2xl hover:scale-105 active:scale-95 transition-all animate-pulse-ring cursor-pointer"
         >
           <MessageSquare className="h-6 w-6" />
-          <span className="absolute top-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-400 border-2 border-slate-900"></span>
+          <span className="absolute top-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-400 border-2 border-zinc-950"></span>
         </button>
       )}
     </div>

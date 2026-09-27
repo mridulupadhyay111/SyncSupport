@@ -91,7 +91,7 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
     const handleNewPending = () => fetchTickets();
     const handleActivity = () => fetchTickets();
     const handleAiLearned = () => {
-      setLearnedNotice(`AI Learned New Solution from Ticket! Embedded into RAG Vector Store.`);
+      setLearnedNotice(`AI Learned New Solution from Ticket! Embedded into Knowledge Base.`);
       fetchTickets();
     };
 
@@ -272,7 +272,7 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
         );
       case 'IN_PROGRESS':
         return (
-          <span className="rounded-md bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 text-[10px] font-bold text-blue-400 uppercase tracking-wider">
+          <span className="rounded-md bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
             In Progress
           </span>
         );
@@ -290,7 +290,7 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
         );
       default:
         return (
-          <span className="rounded-md bg-purple-500/10 border border-purple-500/30 px-2 py-0.5 text-[10px] font-bold text-purple-400 uppercase tracking-wider">
+          <span className="rounded-md bg-zinc-800 border border-zinc-700 px-2 py-0.5 text-[10px] font-bold text-zinc-300 uppercase tracking-wider">
             Bot Handled
           </span>
         );
@@ -300,20 +300,20 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
   // RESTRICT ACCESS IF NOT STAFF (AGENT / ADMIN)
   if (!isStaff) {
     return (
-      <div className="flex-1 min-h-[80vh] flex flex-col items-center justify-center p-6 bg-slate-950 text-slate-100 font-sans">
-        <div className="max-w-md w-full rounded-2xl border border-slate-800 bg-slate-900/90 p-8 text-center space-y-5 shadow-2xl backdrop-blur-xl">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 shadow-xl">
+      <div className="flex-1 min-h-[80vh] flex flex-col items-center justify-center p-6 bg-zinc-950 text-zinc-100 font-sans">
+        <div className="max-w-md w-full rounded-2xl border border-zinc-800 bg-zinc-900/90 p-8 text-center space-y-5 shadow-2xl backdrop-blur-xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-950 border border-zinc-800 text-amber-400 shadow-xl">
             <Lock className="h-8 w-8" />
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-white">Staff Authentication Required</h2>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-zinc-400 leading-relaxed">
               The Support Agent Desk is restricted to authenticated support representatives and system administrators. You must sign in with an active Staff account to manage queues and reply to customer tickets.
             </p>
           </div>
           <button
             onClick={onLoginClick}
-            className="w-full rounded-xl bg-indigo-600 py-3 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-500 transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="w-full rounded-xl bg-emerald-600 py-3 text-xs font-bold text-white shadow-md hover:bg-emerald-500 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             <LogIn className="h-4 w-4" />
             <span>Sign In as Support Agent / Admin</span>
@@ -324,14 +324,14 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
   }
 
   return (
-    <div className="flex-1 flex flex-col h-[calc(100vh-4rem)] w-full bg-slate-950 font-sans overflow-hidden text-slate-100">
+    <div className="flex-1 flex flex-col h-[calc(100vh-4rem)] w-full bg-zinc-950 font-sans overflow-hidden text-zinc-100">
       
       {/* MOBILE TOP TAB NAVIGATION (<1024px) */}
-      <div className="lg:hidden grid grid-cols-3 bg-slate-950 border-b border-slate-800 text-xs font-bold shrink-0">
+      <div className="lg:hidden grid grid-cols-3 bg-zinc-950 border-b border-zinc-800 text-xs font-bold shrink-0">
         <button
           onClick={() => setMobileTab('QUEUE')}
           className={`py-3 flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
-            mobileTab === 'QUEUE' ? 'border-indigo-500 text-indigo-400 bg-slate-900/60' : 'border-transparent text-slate-400'
+            mobileTab === 'QUEUE' ? 'border-emerald-500 text-emerald-400 bg-zinc-900/60' : 'border-transparent text-zinc-400'
           }`}
         >
           <Users className="h-4 w-4" />
@@ -340,7 +340,7 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
         <button
           onClick={() => setMobileTab('CHAT')}
           className={`py-3 flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
-            mobileTab === 'CHAT' ? 'border-indigo-500 text-indigo-400 bg-slate-900/60' : 'border-transparent text-slate-400'
+            mobileTab === 'CHAT' ? 'border-emerald-500 text-emerald-400 bg-zinc-900/60' : 'border-transparent text-zinc-400'
           }`}
         >
           <MessageSquare className="h-4 w-4" />
@@ -349,7 +349,7 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
         <button
           onClick={() => setMobileTab('COPILOT')}
           className={`py-3 flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
-            mobileTab === 'COPILOT' ? 'border-indigo-500 text-indigo-400 bg-slate-900/60' : 'border-transparent text-slate-400'
+            mobileTab === 'COPILOT' ? 'border-emerald-500 text-emerald-400 bg-zinc-900/60' : 'border-transparent text-zinc-400'
           }`}
         >
           <Sparkles className="h-4 w-4" />
@@ -359,38 +359,38 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
 
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT PANE: TICKET QUEUE */}
-        <div className={`w-full lg:w-80 xl:w-96 flex-col border-r border-slate-800 bg-slate-900/60 shrink-0 ${
+        <div className={`w-full lg:w-80 xl:w-96 flex-col border-r border-zinc-800 bg-zinc-900/60 shrink-0 ${
           mobileTab === 'QUEUE' ? 'flex' : 'hidden lg:flex'
         }`}>
-          <div className="p-4 border-b border-slate-800 space-y-3">
+          <div className="p-4 border-b border-zinc-800 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-indigo-400" />
+                <Users className="h-4 w-4 text-emerald-400" />
                 <h2 className="font-bold text-sm text-white">Live Escalation Queue</h2>
               </div>
-              <span className="rounded-full bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-xs font-semibold text-indigo-400">
+              <span className="rounded-full bg-zinc-800 border border-zinc-700 px-2 py-0.5 text-xs font-semibold text-zinc-300">
                 {tickets.length} Tickets
               </span>
             </div>
 
             <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-500" />
               <input
                 type="text"
                 placeholder="Search tickets..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl bg-slate-950 border border-slate-800 pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full rounded-xl bg-zinc-950 border border-zinc-800 pl-8 pr-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
               />
             </div>
 
-            <div className="grid grid-cols-4 gap-1 rounded-lg bg-slate-950 p-1 border border-slate-800 text-[11px] font-medium">
+            <div className="grid grid-cols-4 gap-1 rounded-lg bg-zinc-950 p-1 border border-zinc-800 text-[11px] font-medium">
               {['ALL', 'PENDING_AGENT', 'IN_PROGRESS', 'RESOLVED'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setFilterStatus(tab)}
                   className={`rounded-md py-1 transition-colors cursor-pointer ${
-                    filterStatus === tab ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
+                    filterStatus === tab ? 'bg-zinc-800 text-white font-semibold border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   {tab === 'PENDING_AGENT' ? 'Pending' : tab === 'IN_PROGRESS' ? 'Active' : tab === 'RESOLVED' ? 'Learned' : 'All'}
@@ -399,25 +399,25 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-800/50">
+          <div className="flex-1 overflow-y-auto divide-y divide-zinc-800/60">
             {tickets.map((t) => {
               const isSelected = selectedTicket && selectedTicket._id === t._id;
               return (
                 <div
                   key={t._id}
                   onClick={() => handleSelectTicket(t)}
-                  className={`p-3.5 cursor-pointer transition-all hover:bg-slate-800/50 ${
-                    isSelected ? 'bg-slate-800/80 border-l-4 border-indigo-500' : ''
+                  className={`p-3.5 cursor-pointer transition-all hover:bg-zinc-800/50 ${
+                    isSelected ? 'bg-zinc-800/80 border-l-4 border-emerald-500' : ''
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-indigo-300">{t.ticketNumber}</span>
+                    <span className="font-mono text-xs font-bold text-zinc-300">{t.ticketNumber}</span>
                     {getStatusBadge(t.status)}
                   </div>
 
                   <div className="mt-2 flex items-center justify-between">
                     <h4 className="font-semibold text-xs text-white truncate max-w-[160px]">{t.customerName}</h4>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-zinc-400">
                       {new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -432,23 +432,23 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
         </div>
 
         {/* CENTER PANE: ACTIVE WORKSPACE */}
-        <div className={`flex-1 flex-col bg-slate-950 min-w-0 ${
+        <div className={`flex-1 flex-col bg-zinc-950 min-w-0 ${
           mobileTab === 'CHAT' ? 'flex' : 'hidden lg:flex'
         }`}>
           {selectedTicket ? (
             <>
               {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 bg-slate-900/90 px-4 sm:px-6 py-3 gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 bg-zinc-900/90 px-4 sm:px-6 py-3 gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 font-bold text-white shadow-md">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-800 border border-zinc-700 font-bold text-emerald-400 shadow-md">
                     {selectedTicket.customerName.charAt(0)}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-sm text-white">{selectedTicket.customerName}</h3>
-                      <span className="font-mono text-xs text-indigo-400">{selectedTicket.ticketNumber}</span>
+                      <span className="font-mono text-xs text-zinc-400">{selectedTicket.ticketNumber}</span>
                     </div>
-                    <p className="text-xs text-slate-400">{selectedTicket.customerEmail}</p>
+                    <p className="text-xs text-zinc-400">{selectedTicket.customerEmail}</p>
                   </div>
                 </div>
 
@@ -458,9 +458,9 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
                     <button
                       onClick={handleProposeResolution}
                       disabled={isSummarizing || selectedTicket.status === 'PENDING_CUSTOMER_CONFIRMATION'}
-                      className="flex items-center gap-1.5 rounded-xl bg-purple-600 px-3 py-1.5 text-xs font-bold text-white shadow-md hover:bg-purple-500 disabled:opacity-50 transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-1.5 text-xs font-bold text-zinc-200 shadow-md hover:bg-zinc-700 disabled:opacity-50 transition-all cursor-pointer"
                     >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                       <span>{selectedTicket.status === 'PENDING_CUSTOMER_CONFIRMATION' ? 'Awaiting Yes/No' : 'Propose Resolution'}</span>
                     </button>
                   )}
@@ -487,27 +487,27 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
               )}
 
               {/* Chat Stream */}
-              <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-950/40">
+              <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-zinc-950/40">
                 {chats.map((c, i) => {
                   const isCust = c.sender === 'CUSTOMER';
                   const isBot = c.sender === 'BOT';
                   return (
                     <div key={c._id || i} className={`flex flex-col ${isCust ? 'items-start' : 'items-end'}`}>
                       <div className="flex items-center gap-2 mb-1 px-1">
-                        <span className="text-[11px] font-bold text-slate-300">
+                        <span className="text-[11px] font-bold text-zinc-300">
                           {c.senderName || (isCust ? selectedTicket.customerName : isBot ? 'SyncSupport AI Agent' : agentName)}
                         </span>
-                        <span className="text-[10px] text-slate-500">
+                        <span className="text-[10px] text-zinc-500">
                           {c.timestamp ? new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                         </span>
                       </div>
                       <div
                         className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-md ${
                           isCust
-                            ? 'bg-blue-600 text-white rounded-tl-xs font-medium'
+                            ? 'bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-tl-xs font-medium'
                             : isBot
-                            ? 'bg-purple-950/90 text-purple-100 border border-purple-800/60 rounded-tr-xs'
-                            : 'bg-indigo-600 text-white rounded-tr-xs font-medium'
+                            ? 'bg-zinc-900 text-zinc-300 border border-zinc-800 rounded-tr-xs'
+                            : 'bg-emerald-600 text-white rounded-tr-xs font-medium'
                         }`}
                       >
                         {c.message}
@@ -518,7 +518,7 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
               </div>
 
               {/* Message Input */}
-              <div className="p-3 sm:p-4 border-t border-slate-800 bg-slate-900">
+              <div className="p-3 sm:p-4 border-t border-zinc-800 bg-zinc-900">
                 <div className="flex flex-col gap-2">
                   <textarea
                     rows={2}
@@ -530,15 +530,15 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
                       }
                     }}
                     placeholder={`Reply as ${agentName}... (Ctrl + Enter to send)`}
-                    className="w-full rounded-xl bg-slate-950 border border-slate-800 p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none"
+                    className="w-full rounded-xl bg-zinc-950 border border-zinc-800 p-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-700 resize-none"
                   />
 
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-slate-500 hidden sm:inline">Replying as: <strong>{agentName}</strong></span>
+                    <span className="text-[10px] font-mono text-zinc-500 hidden sm:inline">Replying as: <strong>{agentName}</strong></span>
                     <button
                       onClick={() => handleSendMessage()}
                       disabled={!messageInput.trim()}
-                      className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-indigo-500 disabled:opacity-40 transition-all cursor-pointer ml-auto"
+                      className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-emerald-500 disabled:opacity-40 transition-all cursor-pointer ml-auto"
                     >
                       <span>Send Reply</span>
                       <Send className="h-3.5 w-3.5" />
@@ -548,36 +548,36 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-6">
-              <MessageSquare className="h-12 w-12 text-slate-700 mb-3" />
+            <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 p-6">
+              <MessageSquare className="h-12 w-12 text-zinc-700 mb-3" />
               <p className="text-sm">Select an escalated ticket to respond and assist the customer.</p>
             </div>
           )}
         </div>
 
         {/* RIGHT PANE: AI CO-PILOT & SMART REPLIES */}
-        <div className={`w-full lg:w-80 xl:w-96 flex-col border-l border-slate-800 bg-slate-900/60 p-4 overflow-y-auto space-y-4 shrink-0 ${
+        <div className={`w-full lg:w-80 xl:w-96 flex-col border-l border-zinc-800 bg-zinc-900/60 p-4 overflow-y-auto space-y-4 shrink-0 ${
           mobileTab === 'COPILOT' ? 'flex' : 'hidden lg:flex'
         }`}>
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-violet-400" />
+              <Sparkles className="h-4 w-4 text-emerald-400" />
               <h3 className="font-bold text-sm text-white">Agent AI Co-Pilot</h3>
             </div>
           </div>
 
           {selectedTicket ? (
             <>
-              <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 shadow-md space-y-1">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 shadow-md space-y-1">
+                <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block">
                   Customer Sentiment
                 </span>
                 <div>{getSentimentBadge(selectedTicket.sentiment)}</div>
               </div>
 
-              <div className="rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-4 shadow-md">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-300 mb-2">
-                  <Zap className="h-4 w-4 text-indigo-400" />
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-md">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-200 mb-2">
+                  <Zap className="h-4 w-4 text-amber-400" />
                   <span>Suggested Smart Replies</span>
                 </div>
                 <div className="space-y-2">
@@ -588,7 +588,7 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
                         setMessageInput(chip);
                         setMobileTab('CHAT');
                       }}
-                      className="w-full text-left rounded-lg bg-slate-900 border border-slate-700 p-2.5 text-xs text-slate-200 hover:border-indigo-500 hover:bg-slate-800 transition-all cursor-pointer"
+                      className="w-full text-left rounded-lg bg-zinc-950 border border-zinc-800 p-2.5 text-xs text-zinc-200 hover:border-zinc-700 transition-all cursor-pointer"
                     >
                       "{chip}"
                     </button>
@@ -596,23 +596,23 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 shadow-md">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300 mb-2">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 shadow-md">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 mb-2">
                   <Brain className="h-4 w-4 text-emerald-400" />
                   <span>Knowledge Base Matches</span>
                 </div>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {knowledgeSnippets.map((kb, idx) => (
-                    <div key={idx} className="rounded-lg bg-slate-900 p-2.5 border border-slate-800 text-[11px]">
-                      <div className="font-semibold text-indigo-300 mb-1">{kb.title}</div>
-                      <p className="text-slate-400 line-clamp-3 leading-relaxed">{kb.contentChunk}</p>
+                    <div key={idx} className="rounded-lg bg-zinc-900 p-2.5 border border-zinc-800 text-[11px]">
+                      <div className="font-semibold text-zinc-200 mb-1">{kb.title}</div>
+                      <p className="text-zinc-400 line-clamp-3 leading-relaxed">{kb.contentChunk}</p>
                     </div>
                   ))}
                 </div>
               </div>
             </>
           ) : (
-            <div className="text-center text-xs text-slate-500 py-10">
+            <div className="text-center text-xs text-zinc-500 py-10">
               Select a ticket to activate AI Co-Pilot.
             </div>
           )}
