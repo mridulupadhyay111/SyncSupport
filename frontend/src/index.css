@@ -8,8 +8,8 @@
     padding: 0;
     box-sizing: border-box;
     font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background-color: #09090b;
-    color: #f4f4f5;
+    background-color: #f8fafc;
+    color: #0f172a;
   }
 }
 
@@ -20,16 +20,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(24, 24, 27, 0.6);
+  background: rgba(241, 245, 249, 0.8);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(63, 63, 70, 0.6);
+  background: rgba(203, 213, 225, 0.8);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.8);
+  background: rgba(148, 163, 184, 1);
 }
 
 /* Pulse Glow Animation */
@@ -52,10 +52,10 @@
   animation: pulse-ring 2.5s infinite;
 }
 
-/* Glassmorphism utility */
+/* Glassmorphism utility for light mode */
 .glass-panel {
-  background: rgba(24, 24, 27, 0.75);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
