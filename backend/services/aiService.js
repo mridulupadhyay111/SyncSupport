@@ -13,6 +13,25 @@ const getAIClient = () => {
   return aiClient;
 };
 
+const MODEL_CANDIDATES = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+
+const safeGenerateContent = async (client, contents) => {
+  for (const model of MODEL_CANDIDATES) {
+    try {
+      const response = await client.models.generateContent({
+        model,
+        contents,
+      });
+      if (response && response.text) {
+        return response.text.trim();
+      }
+    } catch (err) {
+      // If model not found (404), try next candidate model in order
+    }
+  }
+  return null;
+};
+
 // Generate 768-dimensional vector embedding
 const generateEmbedding = async (text) => {
   const client = getAIClient();
@@ -57,7 +76,7 @@ const calculateCosineSimilarity = (vecA, vecB) => {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 };
 
-// Generate grounded response using gemini-2.5-flash
+// Generate grounded response
 const generateGroundedResponse = async (query, contextChunks) => {
   const client = getAIClient();
   const contextText = contextChunks.map((c, i) => `[Learned Knowledge ${i + 1}: ${c.title}]\n${c.contentChunk}`).join('\n\n');
@@ -72,17 +91,8 @@ Rules:
 3. Be professional, friendly, and direct.`;
 
   if (client) {
-    try {
-      const response = await client.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: `${systemPrompt}\n\nCustomer Query: ${query}`,
-      });
-      if (response && response.text) {
-        return response.text.trim();
-      }
-    } catch (err) {
-      console.warn('[AI Service] Gemini text generation failed, using fallback:', err.message);
-    }
+    const text = await safeGenerateContent(client, `${systemPrompt}\n\nCustomer Query: ${query}`);
+    if (text) return text;
   }
 
   // Fallback intelligent response formatting for learned RAG answers
@@ -106,19 +116,11 @@ Rules:
 const analyzeSentiment = async (message) => {
   const client = getAIClient();
   if (client) {
-    try {
-      const prompt = `Analyze the sentiment of this customer message. Respond with ONLY one word: "Satisfied", "Neutral", or "Frustrated".
+    const prompt = `Analyze the sentiment of this customer message. Respond with ONLY one word: "Satisfied", "Neutral", or "Frustrated".
 Customer message: "${message}"`;
-      const response = await client.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-      });
-      const text = response.text.trim();
-      if (['Satisfied', 'Neutral', 'Frustrated'].includes(text)) {
-        return text;
-      }
-    } catch (err) {
-      console.warn('[AI Service] Sentiment analysis failed:', err.message);
+    const text = await safeGenerateContent(client, prompt);
+    if (text && ['Satisfied', 'Neutral', 'Frustrated'].includes(text)) {
+      return text;
     }
   }
 
@@ -136,21 +138,18 @@ Customer message: "${message}"`;
 const generateSmartReplies = async (latestCustomerMessage, history = []) => {
   const client = getAIClient();
   if (client) {
-    try {
-      const prompt = `You are an AI co-pilot for a customer support agent.
+    const prompt = `You are an AI co-pilot for a customer support agent.
 Based on the customer message: "${latestCustomerMessage}", generate 3 distinct, professional, turn-key quick reply options for the human agent.
 Return ONLY a valid JSON array of 3 strings.`;
-      const response = await client.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-      });
-      const text = response.text.trim().replace(/```json/g, '').replace(/```/g, '');
-      const parsed = JSON.parse(text);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.slice(0, 3);
-      }
-    } catch (err) {
-      console.warn('[AI Service] Smart reply generation failed:', err.message);
+    const text = await safeGenerateContent(client, prompt);
+    if (text) {
+      try {
+        const cleanText = text.replace(/```json/g, '').replace(/```/g, '');
+        const parsed = JSON.parse(cleanText);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.slice(0, 3);
+        }
+      } catch (err) {}
     }
   }
 
@@ -167,8 +166,7 @@ const extractKnowledgeFromChat = async (chatMessages) => {
   const textLog = chatMessages.map(m => `${m.sender} (${m.senderName}): ${m.message}`).join('\n');
 
   if (client) {
-    try {
-      const prompt = `Analyze this resolved customer support chat.
+    const prompt = `Analyze this resolved customer support chat.
 Extract the core customer question/problem and the exact solution provided by the human agent.
 Return a clean, structured Q&A summary chunk suitable for embedding into a RAG knowledge base.
 
@@ -180,26 +178,19 @@ A: [Human agent's exact solution and steps]
 Chat Log:
 ${textLog}`;
 
-      const response = await client.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-      });
+    const text = await safeGenerateContent(client, prompt);
 
-      if (response && response.text) {
-        const text = response.text.trim();
-        const lines = text.split('\n');
-        let title = 'Agent Learned Solution';
-        let contentChunk = text;
+    if (text) {
+      const lines = text.split('\n');
+      let title = 'Agent Learned Solution';
+      let contentChunk = text;
 
-        for (const line of lines) {
-          if (line.startsWith('Title:')) {
-            title = line.replace('Title:', '').trim();
-          }
+      for (const line of lines) {
+        if (line.startsWith('Title:')) {
+          title = line.replace('Title:', '').trim();
         }
-        return { title, contentChunk };
       }
-    } catch (err) {
-      console.warn('[AI Service] Extract knowledge failed:', err.message);
+      return { title, contentChunk };
     }
   }
 
