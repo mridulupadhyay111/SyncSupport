@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Builds
+dist/
+frontend/dist/
+
+# Environment variables
+.env
+.env.*
+backend/.env
+frontend/.env
+
+# Logs
+*.log
+logs/
+
+# IDE & OS
+.DS_Store
+.vscode/
+.idea/

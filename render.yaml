@@ -1,0 +1,37 @@
+services:
+  # Backend Node.js / Express + Socket.io Web Service
+  - type: web
+    name: syncsupport-backend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: BACKEND_URL
+        sync: false # Set to https://syncsupport-backend.onrender.com (or your custom domain)
+      - key: MONGODB_URI
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # Frontend Vite React Static Site
+  - type: web
+    name: syncsupport-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false # Set to https://syncsupport-backend.onrender.com

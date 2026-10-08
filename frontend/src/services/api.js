@@ -42,5 +42,8 @@ export const api = {
   updateTicket: (id, data) => client.put(`/tickets/${id}`, data),
   proposeResolution: (id) => client.post(`/tickets/${id}/propose-resolution`),
   confirmResolution: (id, userChoice) => client.post(`/tickets/${id}/confirm-resolution`, { userChoice }),
-  resolveAndSummarize: (id) => client.post(`/tickets/${id}/resolve-summarize`)
+  resolveAndSummarize: (id) => client.post(`/tickets/${id}/resolve-summarize`),
+
+  // Server Keep-Alive & Health Check
+  checkHealth: () => client.get('/health')
 };

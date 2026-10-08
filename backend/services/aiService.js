@@ -13,7 +13,7 @@ const getAIClient = () => {
   return aiClient;
 };
 
-const MODEL_CANDIDATES = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+const MODEL_CANDIDATES = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
 
 const safeGenerateContent = async (client, contents) => {
   for (const model of MODEL_CANDIDATES) {
@@ -26,7 +26,7 @@ const safeGenerateContent = async (client, contents) => {
         return response.text.trim();
       }
     } catch (err) {
-      // If model not found (404), try next candidate model in order
+      // If model candidate fails, try next candidate model in order
     }
   }
   return null;
@@ -76,40 +76,106 @@ const calculateCosineSimilarity = (vecA, vecB) => {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 };
 
+// Helper to clean informal human agent jargon or internal notes
+const sanitizeAgentText = (text) => {
+  if (!text) return '';
+  let cleaned = text.trim();
+  const preambles = [
+    /^(done\s*fixed|fixed|done)\b[.,:]?\s*/i,
+    /^tell\s*(him|her|them|customer)\b[.,:]?\s*/i,
+    /^(he|she|customer)\s*(asked|requested)\b[.,:]?\s*/i,
+    /^(instructed|noted|ok|okay)\b[.,:]?\s*/i
+  ];
+  
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const pat of preambles) {
+      if (pat.test(cleaned)) {
+        cleaned = cleaned.replace(pat, '').trim();
+        changed = true;
+      }
+    }
+  }
+
+  // Rephrase informal shorthand and third-person pronouns into courteous customer phrasing
+  cleaned = cleaned.replace(/\bdelivery guys have\b/gi, 'our delivery partners carry');
+  cleaned = cleaned.replace(/\bpay via GPay or PhonePe\b/gi, 'pay via GPay, PhonePe, or any UPI app');
+  cleaned = cleaned.replace(/\bsent (it )?to (her|his|their|customer's) email( id)?\b/gi, 'sent directly to your registered email address');
+  cleaned = cleaned.replace(/\bcheck email\b/gi, 'please check your email inbox');
+  cleaned = cleaned.replace(/\b(her|his|their) account\b/gi, 'your account');
+
+  if (cleaned.length > 0) {
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+  return cleaned;
+};
+
+// Helper to curate and format raw human agent/KB text into a polite, well-mannered AI response
+const curateFallbackResponse = (query, contextChunks) => {
+  if (!contextChunks || contextChunks.length === 0) {
+    return `Hello! Thank you for reaching out to SyncSupport.\n\nI don't have exact details regarding "${query}" in my current knowledge base.\n\nWould you like me to connect you with a live human support representative who can assist you directly and update my knowledge for future inquiries?`;
+  }
+
+  const topChunk = contextChunks[0];
+  let rawText = topChunk.contentChunk || '';
+
+  // Extract solution body if structured with Q&A or Resolution tags
+  let solutionText = rawText;
+  if (rawText.includes('Resolution:')) {
+    const parts = rawText.split(/Resolution:/i);
+    solutionText = parts[parts.length - 1].trim();
+  } else if (rawText.includes('A:')) {
+    const parts = rawText.split(/A:/i);
+    solutionText = parts[parts.length - 1].trim();
+  }
+
+  // Clean up any remaining leading Q: or Question: headers or Title: lines
+  solutionText = solutionText
+    .replace(/^Title:\s*.*$/gm, '')
+    .replace(/^Q:\s*.*$/gm, '')
+    .replace(/^Question:\s*.*$/gm, '')
+    .trim();
+
+  // Sanitize informal jargon and internal notes
+  solutionText = sanitizeAgentText(solutionText);
+
+  // Format with Markdown bullet points if multiple sentences/steps are present
+  const sentences = solutionText.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+  let formattedBody = solutionText;
+  if (sentences.length > 1) {
+    formattedBody = sentences.map(s => `• ${s.trim()}`).join('\n');
+  }
+
+  return `Hello! Thank you for contacting SyncSupport.\n\nBased on our verified support guidelines, here is the curated solution for your query:\n\n${formattedBody}\n\nPlease let me know if you need any further assistance! I am always here to help.`;
+};
+
 // Generate grounded response
 const generateGroundedResponse = async (query, contextChunks) => {
   const client = getAIClient();
-  const contextText = contextChunks.map((c, i) => `[Learned Knowledge ${i + 1}: ${c.title}]\n${c.contentChunk}`).join('\n\n');
+  const contextText = contextChunks.map((c, i) => `[Knowledge Source ${i + 1}: ${c.title}]\n${c.contentChunk}`).join('\n\n');
 
-  const systemPrompt = `You are SyncSupport AI, an autonomous customer support agent.
-Answer the customer's question clearly and directly using the learned knowledge base context below:
+  const systemPrompt = `You are SyncSupport AI, an empathetic, highly courteous, and well-mannered customer support assistant.
+
+Your task is to answer the customer's query using the verified Knowledge Base context below.
+
+Knowledge Base Context:
 ${contextText || 'No specific document context available.'}
 
-Rules:
-1. If the knowledge base contains the answer (including answers previously learned from human agents), provide a helpful, concise answer.
-2. If the answer is NOT in the knowledge base, inform the customer politely that you don't know yet and offer to escalate to a live human support agent.
-3. Be professional, friendly, and direct.`;
+RULES FOR CURATING YOUR ANSWER:
+1. REPHRASE & CURATE: Do NOT repeat raw human agent messages, internal chat transcripts, or informal notes word-for-word. Synthesize and transform the solution into a polished, polite, and well-structured customer response.
+2. TONE & MANNER: Be warm, respectful, and professional. Include a polite greeting, explain the steps clearly and concisely, and close with a friendly offer of further assistance.
+3. CLEAR FORMATTING: Use Markdown (such as bullet points or bold text) to present steps or key information clearly.
+4. RELEVANCE & ACCURACY: Directly address the customer's specific question: "${query}". Keep all facts, policies, and procedural steps 100% accurate according to the Knowledge Base context.
+5. ESCALATION: If the Knowledge Base context does not contain sufficient details to answer the customer's question, politely explain that you do not have that specific information yet and offer to escalate the request to a live human support representative.`;
 
   if (client) {
     const text = await safeGenerateContent(client, `${systemPrompt}\n\nCustomer Query: ${query}`);
     if (text) return text;
   }
 
-  // Fallback intelligent response formatting for learned RAG answers
-  if (contextChunks.length > 0) {
-    const topChunk = contextChunks[0];
-    const chunkText = topChunk.contentChunk;
-
-    // Check if chunk is a learned Q&A from human agent
-    if (chunkText.includes('Resolution:') || chunkText.includes('A:')) {
-      const match = chunkText.match(/(?:Resolution:|A:)\s*([\s\S]+)/i);
-      const answerText = match ? match[1].trim() : chunkText;
-      return `Here is the solution learned from our support team:\n\n${answerText}`;
-    }
-
-    return `Based on our knowledge base:\n\n${chunkText}`;
-  }
-  return `I don't have exact information on "${query}" in my current knowledge base. Would you like me to connect you with a live human support agent so we can resolve this and update my knowledge for future inquiries?`;
+  // Intelligently curated fallback response for offline/fallback mode
+  return curateFallbackResponse(query, contextChunks);
 };
 
 // Analyze Customer Sentiment
@@ -166,14 +232,14 @@ const extractKnowledgeFromChat = async (chatMessages) => {
   const textLog = chatMessages.map(m => `${m.sender} (${m.senderName}): ${m.message}`).join('\n');
 
   if (client) {
-    const prompt = `Analyze this resolved customer support chat.
-Extract the core customer question/problem and the exact solution provided by the human agent.
-Return a clean, structured Q&A summary chunk suitable for embedding into a RAG knowledge base.
+    const prompt = `Analyze this resolved customer support chat log.
+Extract the core customer question/issue and the resolution provided by the human agent.
+Synthesize the human agent's resolution into a clean, professional, step-by-step knowledge base entry. Do NOT copy informal chat slang, typos, or conversational filler verbatim.
 
-Format output as:
-Title: [Short title describing the problem]
-Q: [Customer's core question or issue]
-A: [Human agent's exact solution and steps]
+Format output exactly as:
+Title: [Short, clear title describing the problem and resolution]
+Q: [Clean summary of customer question/issue]
+A: [Curated, well-structured, step-by-step resolution]
 
 Chat Log:
 ${textLog}`;
@@ -182,7 +248,7 @@ ${textLog}`;
 
     if (text) {
       const lines = text.split('\n');
-      let title = 'Agent Learned Solution';
+      let title = 'Verified Support Solution';
       let contentChunk = text;
 
       for (const line of lines) {
@@ -194,13 +260,15 @@ ${textLog}`;
     }
   }
 
-  // Fallback extraction - get latest customer question & agent resolution
+  // Fallback extraction with clean formatting
   const custMsg = [...chatMessages].reverse().find(m => m.sender === 'CUSTOMER')?.message || 'Customer Inquiry';
-  const agentMsg = [...chatMessages].reverse().find(m => m.sender === 'AGENT')?.message || 'Issue resolved by support agent.';
+  const rawAgentMsg = [...chatMessages].reverse().find(m => m.sender === 'AGENT' || m.sender === 'BOT')?.message || 'Issue resolved by support representative.';
+
+  const cleanAgentMsg = rawAgentMsg.replace(/^(namaste|hello|hi|hey|thanks|thank you)[^.!]*[.!]?/i, '').trim() || rawAgentMsg;
 
   return {
-    title: `Learned: ${custMsg.slice(0, 50)}...`,
-    contentChunk: `Question: ${custMsg}\n\nResolution: ${agentMsg}`
+    title: `Solution: ${custMsg.slice(0, 55).trim()}`,
+    contentChunk: `Question: ${custMsg}\n\nResolution: ${cleanAgentMsg}`
   };
 };
 

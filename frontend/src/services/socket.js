@@ -13,8 +13,14 @@ export const getSocket = () => {
     socket = io(SOCKET_URL, {
       autoConnect: true,
       transports: ['websocket', 'polling'],
-      reconnectionAttempts: 20,
-      reconnectionDelay: 1000
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      randomizationFactor: 0.5,
+      timeout: 20000,
+      pingInterval: 10000,
+      pingTimeout: 5000
     });
 
     socket.on('connect', () => {

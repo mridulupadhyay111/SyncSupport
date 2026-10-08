@@ -6,6 +6,9 @@ import CustomerPortal from './pages/CustomerPortal';
 import AgentPortal from './pages/AgentPortal';
 import AdminPortal from './pages/AdminPortal';
 
+import { api } from './services/api';
+import { getSocket } from './services/socket';
+
 export default function App() {
   const [activeAgentStatus, setActiveAgentStatus] = useState('ONLINE');
   const [currentUser, setCurrentUser] = useState(null);
@@ -18,6 +21,35 @@ export default function App() {
         setCurrentUser(JSON.parse(savedUser));
       } catch (e) {}
     }
+  }, []);
+
+  // Server Keep-Alive & Auto-Reconnect Heartbeat
+  useEffect(() => {
+    // Ping backend /api/health every 4 minutes to ensure backend stays warm while app is open
+    const heartbeatInterval = setInterval(() => {
+      api.checkHealth().catch(() => {});
+    }, 4 * 60 * 1000);
+
+    // Initial warm-up ping
+    api.checkHealth().catch(() => {});
+
+    // Handle tab focus or network reconnect
+    const handleFocusOrOnline = () => {
+      api.checkHealth().catch(() => {});
+      const socket = getSocket();
+      if (socket && !socket.connected) {
+        socket.connect();
+      }
+    };
+
+    window.addEventListener('focus', handleFocusOrOnline);
+    window.addEventListener('online', handleFocusOrOnline);
+
+    return () => {
+      clearInterval(heartbeatInterval);
+      window.removeEventListener('focus', handleFocusOrOnline);
+      window.removeEventListener('online', handleFocusOrOnline);
+    };
   }, []);
 
   const handleLogout = () => {

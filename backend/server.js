@@ -61,6 +61,8 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+const startKeepAlive = require('./services/keepAlive');
+
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
@@ -68,4 +70,8 @@ server.listen(PORT, () => {
   console.log(`  SyncSupport Omnichannel Server Running on Port ${PORT}`);
   console.log(`  Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`======================================================\n`);
+  
+  // Start automated Keep-Alive daemon to prevent backend spin-down
+  startKeepAlive();
 });
+
