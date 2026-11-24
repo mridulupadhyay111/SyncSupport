@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, MessageSquare, Sparkles, Send, CheckCircle2, Clock, 
   Search, Filter, AlertTriangle, Smile, Meh, Frown, Paperclip, 
-  FileText, ChevronRight, RefreshCw, Zap, Shield, Brain, ArrowRight, Lock, LogIn, Headset
+  FileText, ChevronRight, RefreshCw, Zap, Shield, Brain, ArrowRight, Lock, LogIn, Headset,
+  UploadCloud, FileUp, Image
 } from 'lucide-react';
 import { api } from '../services/api';
 import { getSocket } from '../services/socket';
+import UploadKnowledgeModal from '../components/UploadKnowledgeModal';
 
 export default function AgentPortal({ currentUser, onLoginClick, activeAgentStatus, onStatusChange }) {
   const [tickets, setTickets] = useState([]);
@@ -21,6 +23,7 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
   const [isLoading, setIsLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [learnedNotice, setLearnedNotice] = useState(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   // Mobile viewport tab state: 'QUEUE' | 'CHAT' | 'COPILOT'
   const [mobileTab, setMobileTab] = useState('QUEUE');
@@ -115,8 +118,14 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
 
     const handleNewPending = () => fetchTickets();
     const handleActivity = () => fetchTickets();
-    const handleAiLearned = () => {
-      setLearnedNotice(`AI Learned New Solution from Ticket! Embedded into Knowledge Base.`);
+    const handleAiLearned = (data) => {
+      const typeLabel = data?.sourceType === 'PHOTO' 
+        ? '📷 photo' 
+        : data?.sourceType === 'DOCUMENT' 
+        ? '📄 document' 
+        : 'solution';
+      const titleLabel = data?.title ? `"${data.title}"` : 'New Solution';
+      setLearnedNotice(`🧠 AI RAG learned from ${typeLabel} ${titleLabel}! Embedded into Vector Store.`);
       fetchTickets();
     };
 
@@ -382,9 +391,19 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
                 <Users className="h-4 w-4 text-slate-900" />
                 <h2 className="font-bold text-sm text-slate-900">Live Escalation Queue</h2>
               </div>
-              <span className="rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">
-                {tickets.length} Tickets
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                  {tickets.length}
+                </span>
+                <button
+                  onClick={() => setIsUploadModalOpen(true)}
+                  className="flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 text-[11px] font-bold shadow-2xs transition-all cursor-pointer"
+                  title="Upload Docs & Photos to Train RAG"
+                >
+                  <UploadCloud className="h-3 w-3" />
+                  <span>Teach RAG</span>
+                </button>
+              </div>
             </div>
 
             <div className="relative">
@@ -548,7 +567,18 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
                   />
 
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-slate-500 hidden sm:inline">Replying as: <strong>{agentName}</strong></span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-slate-500 hidden sm:inline">Replying as: <strong>{agentName}</strong></span>
+                      <button
+                        type="button"
+                        onClick={() => setIsUploadModalOpen(true)}
+                        className="flex items-center gap-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer"
+                        title="Upload Docs & Photos to Train RAG"
+                      >
+                        <FileUp className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Upload Doc / Photo</span>
+                      </button>
+                    </div>
                     <button
                       onClick={() => handleSendMessage()}
                       disabled={!messageInput.trim()}
@@ -578,6 +608,32 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
               <Sparkles className="h-4 w-4 text-emerald-600" />
               <h3 className="font-bold text-sm text-slate-900">Agent AI Co-Pilot</h3>
             </div>
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
+            >
+              <UploadCloud className="h-3.5 w-3.5" />
+              <span>Teach RAG</span>
+            </button>
+          </div>
+
+          {/* Quick RAG Training Card */}
+          <div className="rounded-xl border border-dashed border-emerald-300 bg-emerald-50/60 p-3 shadow-2xs flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shrink-0">
+                <FileUp className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <span className="block text-xs font-bold text-slate-900 truncate">Teach AI RAG</span>
+                <span className="block text-[10px] text-slate-500 truncate">Upload Photos & Docs</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-slate-800 transition-all shrink-0 cursor-pointer shadow-2xs"
+            >
+              Upload
+            </button>
           </div>
 
           {selectedTicket ? (
@@ -632,6 +688,19 @@ export default function AgentPortal({ currentUser, onLoginClick, activeAgentStat
           )}
         </div>
       </div>
+
+      {/* Upload Docs & Photos Modal */}
+      <UploadKnowledgeModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onUploadSuccess={(data) => {
+          setLearnedNotice(`🧠 AI RAG successfully learned from "${data.title}"! ${data.chunks?.length || 1} vector chunks indexed.`);
+          fetchTickets();
+          if (selectedTicket) {
+            handleSelectTicket(selectedTicket);
+          }
+        }}
+      />
     </div>
   );
 }

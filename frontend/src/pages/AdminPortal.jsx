@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Database, FileText, Layers, Trash2, Plus, Sparkles, CheckCircle2, 
-  BarChart3, ShieldCheck, RefreshCw, Cpu, Tag, Search, Lock, LogIn, Shield, Activity
+  BarChart3, ShieldCheck, RefreshCw, Cpu, Tag, Search, Lock, LogIn, Shield, Activity,
+  UploadCloud, FileUp, Image as ImageIcon
 } from 'lucide-react';
 import { api } from '../services/api';
+import UploadKnowledgeModal from '../components/UploadKnowledgeModal';
 
 export default function AdminPortal({ currentUser, onLoginClick }) {
   const [knowledgeList, setKnowledgeList] = useState([]);
@@ -13,6 +15,7 @@ export default function AdminPortal({ currentUser, onLoginClick }) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isIngesting, setIsIngesting] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryTab, setSelectedCategoryTab] = useState('ALL');
   const [notification, setNotification] = useState(null);
@@ -130,13 +133,22 @@ export default function AdminPortal({ currentUser, onLoginClick }) {
           </p>
         </div>
 
-        <button
-          onClick={fetchKnowledgeBase}
-          className="flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-all shrink-0 cursor-pointer w-fit shadow-2xs"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-          <span>Sync Vector Store</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setIsUploadModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 text-white px-3.5 py-2 text-xs font-bold hover:bg-slate-800 transition-all shrink-0 cursor-pointer shadow-xs"
+          >
+            <UploadCloud className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Upload Docs & Photos</span>
+          </button>
+          <button
+            onClick={fetchKnowledgeBase}
+            className="flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-all shrink-0 cursor-pointer w-fit shadow-2xs"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Sync Vector Store</span>
+          </button>
+        </div>
       </div>
 
       {/* Overview Metrics Cards */}
@@ -186,6 +198,26 @@ export default function AdminPortal({ currentUser, onLoginClick }) {
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
             <Activity className="h-4 w-4 text-emerald-600" />
             <h3 className="font-bold text-sm text-slate-900">Document Ingestion Pipeline</h3>
+          </div>
+
+          {/* Multimodal Upload Quick Trigger */}
+          <div className="rounded-xl border border-dashed border-emerald-300 bg-emerald-50/70 p-3.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white shrink-0">
+                <FileUp className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <span className="font-bold text-xs text-slate-900 block truncate">Multimodal Upload</span>
+                <span className="text-[10px] text-slate-500 block truncate">Train RAG with Photos & Docs</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsUploadModalOpen(true)}
+              className="rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-[11px] font-bold text-white transition-all shrink-0 cursor-pointer shadow-2xs"
+            >
+              Upload
+            </button>
           </div>
 
           {notification && (
@@ -297,11 +329,39 @@ export default function AdminPortal({ currentUser, onLoginClick }) {
               <tbody className="divide-y divide-slate-100">
                 {filteredKnowledge.map((item) => (
                   <tr key={item._id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-3.5 py-3 max-w-[180px]">
+                    <td className="px-3.5 py-3 max-w-[200px]">
                       <div className="font-bold text-slate-900 truncate">{item.title}</div>
-                      <span className="inline-flex items-center gap-1 mt-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700 border border-slate-200">
-                        <Tag className="h-2.5 w-2.5 text-slate-500" /> {item.category}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700 border border-slate-200">
+                          <Tag className="h-2.5 w-2.5 text-slate-500" /> {item.category}
+                        </span>
+                        <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold border ${
+                          item.sourceType === 'PHOTO'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : item.sourceType === 'DOCUMENT'
+                            ? 'bg-sky-50 text-sky-700 border-sky-200'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}>
+                          {item.sourceType === 'PHOTO' ? (
+                            <>
+                              <ImageIcon className="h-2.5 w-2.5" /> Photo
+                            </>
+                          ) : item.sourceType === 'DOCUMENT' ? (
+                            <>
+                              <FileText className="h-2.5 w-2.5" /> Doc
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-2.5 w-2.5" /> Text
+                            </>
+                          )}
+                        </span>
+                      </div>
+                      {item.uploadedBy && (
+                        <span className="block mt-1 text-[10px] text-slate-400 truncate">
+                          By: {item.uploadedBy}
+                        </span>
+                      )}
                     </td>
 
                     <td className="px-3.5 py-3 max-w-[280px]">
@@ -340,6 +400,19 @@ export default function AdminPortal({ currentUser, onLoginClick }) {
           </div>
         </div>
       </div>
+
+      {/* Upload Docs & Photos Modal */}
+      <UploadKnowledgeModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onUploadSuccess={(data) => {
+          setNotification({
+            type: 'success',
+            message: `Successfully indexed "${data.title}" (${data.sourceType || 'FILE'}) into ${data.chunks?.length || 1} vector chunk(s)!`
+          });
+          fetchKnowledgeBase();
+        }}
+      />
     </div>
   );
 }

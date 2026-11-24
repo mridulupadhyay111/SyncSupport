@@ -1,5 +1,10 @@
 const KnowledgeBase = require('../models/KnowledgeBase');
-const { generateEmbedding, calculateCosineSimilarity, generateGroundedResponse } = require('../services/aiService');
+const { 
+  generateEmbedding, 
+  calculateCosineSimilarity, 
+  generateGroundedResponse,
+  extractKnowledgeFromFile 
+} = require('../services/aiService');
 
 // Helper to chunk text into ~200 word blocks
 const chunkText = (text, targetWordCount = 200) => {
@@ -18,6 +23,7 @@ exports.ingestDocument = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Title and content are required.' });
     }
 
+    const uploadedBy = req.user?.name || req.user?.email || 'Staff Agent';
     const textChunks = chunkText(content, 180);
     const createdChunks = [];
 
@@ -31,7 +37,9 @@ exports.ingestDocument = async (req, res) => {
         title: chunkTitle,
         contentChunk: chunkTextContent,
         embedding: embedding,
-        category: category || 'General'
+        category: category || 'General',
+        sourceType: 'TEXT',
+        uploadedBy: uploadedBy
       });
 
       createdChunks.push({
@@ -39,7 +47,19 @@ exports.ingestDocument = async (req, res) => {
         title: kbItem.title,
         contentChunk: kbItem.contentChunk,
         category: kbItem.category,
+        sourceType: kbItem.sourceType,
+        uploadedBy: kbItem.uploadedBy,
         vectorDimensions: kbItem.embedding.length
+      });
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('ai_learned_new_knowledge', {
+        title,
+        sourceType: 'TEXT',
+        chunksCreated: createdChunks.length,
+        uploadedBy
       });
     }
 
@@ -50,6 +70,97 @@ exports.ingestDocument = async (req, res) => {
     });
   } catch (err) {
     console.error('[RAG Controller Ingest Error]', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * Upload and Learn from Docs and Photos
+ * Allows human agents and admins to upload documents (PDF, TXT, MD, etc.) and photos/screenshots
+ * Multimodal AI extracts structured knowledge, converts into vector embeddings, and stores in RAG.
+ */
+exports.uploadAndLearn = async (req, res) => {
+  try {
+    const { fileData, fileName, fileType, fileSize, category, notes, title: customTitle } = req.body;
+    if (!fileData || !fileName) {
+      return res.status(400).json({ success: false, message: 'File data and file name are required.' });
+    }
+
+    const uploadedBy = req.user?.name || req.user?.email || 'Support Agent';
+
+    // 1. Extract knowledge using AI multimodal service (Docs or Photos)
+    const extracted = await extractKnowledgeFromFile({
+      fileData,
+      fileName,
+      fileType,
+      category: category || 'General',
+      notes,
+      uploadedBy
+    });
+
+    const docTitle = customTitle && customTitle.trim() ? customTitle.trim() : (extracted.title || fileName);
+    const docContent = extracted.content || notes || 'Verified support reference.';
+    const sourceType = extracted.sourceType || 'DOCUMENT';
+
+    // 2. Chunk extracted text
+    const textChunks = chunkText(docContent, 180);
+    const createdChunks = [];
+
+    // 3. Generate embeddings and save to KnowledgeBase
+    for (let i = 0; i < textChunks.length; i++) {
+      const chunkTextContent = textChunks[i];
+      const chunkTitle = textChunks.length > 1 ? `${docTitle} (Part ${i + 1})` : docTitle;
+
+      const embedding = await generateEmbedding(chunkTextContent);
+
+      const kbItem = await KnowledgeBase.create({
+        title: chunkTitle,
+        contentChunk: chunkTextContent,
+        embedding: embedding,
+        category: category || 'General',
+        sourceType: sourceType,
+        fileMetadata: {
+          fileName: fileName,
+          fileType: fileType || (sourceType === 'PHOTO' ? 'image/png' : 'application/pdf'),
+          fileSize: fileSize || 0
+        },
+        uploadedBy: uploadedBy
+      });
+
+      createdChunks.push({
+        id: kbItem._id,
+        title: kbItem.title,
+        contentChunk: kbItem.contentChunk,
+        category: kbItem.category,
+        sourceType: kbItem.sourceType,
+        uploadedBy: kbItem.uploadedBy,
+        vectorDimensions: kbItem.embedding.length
+      });
+    }
+
+    // 4. Real-time broadcast to all connected agents and clients via Socket.io
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('ai_learned_new_knowledge', {
+        title: docTitle,
+        sourceType,
+        fileName,
+        category: category || 'General',
+        chunksCreated: createdChunks.length,
+        uploadedBy,
+        timestamp: new Date()
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully learned from ${sourceType === 'PHOTO' ? 'photo' : 'document'} "${fileName}" and created ${createdChunks.length} vector chunk(s).`,
+      title: docTitle,
+      sourceType,
+      chunks: createdChunks
+    });
+  } catch (err) {
+    console.error('[RAG Controller Upload Error]', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -169,6 +280,9 @@ exports.getKnowledgeBase = async (req, res) => {
       title: k.title,
       contentChunk: k.contentChunk,
       category: k.category,
+      sourceType: k.sourceType || 'TEXT',
+      fileMetadata: k.fileMetadata || {},
+      uploadedBy: k.uploadedBy || 'Staff',
       vectorLength: k.embedding ? k.embedding.length : 0,
       createdAt: k.createdAt
     }));

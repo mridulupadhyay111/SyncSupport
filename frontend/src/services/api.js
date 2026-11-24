@@ -28,6 +28,7 @@ export const api = {
   // RAG & Knowledge Base
   queryRAG: (query) => client.post('/rag/query', { query }),
   ingestDocument: (title, content, category) => client.post('/rag/ingest', { title, content, category }),
+  uploadKnowledgeFile: (data) => client.post('/rag/upload', data),
   getKnowledgeBase: () => client.get('/rag/list'),
   deleteKnowledgeChunk: (id) => client.delete(`/rag/${id}`),
 

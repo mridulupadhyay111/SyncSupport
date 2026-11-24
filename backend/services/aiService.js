@@ -272,11 +272,224 @@ ${textLog}`;
   };
 };
 
+/**
+ * Multimodal Knowledge Extraction from Docs & Photos
+ * Analyzes uploaded PDFs, images (PNG, JPG, WEBP), and text files to extract structured RAG knowledge.
+ */
+const extractKnowledgeFromFile = async ({ fileData, fileName, fileType, notes, category, uploadedBy }) => {
+  const isImage = (fileType && fileType.startsWith('image/')) || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(fileName || '');
+  const isPdf = fileType === 'application/pdf' || /\.pdf$/i.test(fileName || '');
+  const isText = (fileType && (fileType.startsWith('text/') || fileType === 'application/json')) || /\.(txt|md|csv|json|log)$/i.test(fileName || '');
+  const sourceType = isImage ? 'PHOTO' : 'DOCUMENT';
+
+  const base64Clean = (fileData || '').replace(/^data:[^;]+;base64,/, '').trim();
+  const client = getAIClient();
+  const cleanBaseName = (fileName || 'Uploaded_Document')
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[-_]/g, ' ')
+    .trim();
+
+  // 1. Photo / Image Multimodal Extraction
+  if (isImage) {
+    let extractedTitle = `Visual Guide: ${cleanBaseName}`;
+    let extractedContent = '';
+
+    if (client && base64Clean) {
+      try {
+        const mime = fileType && fileType.startsWith('image/') 
+          ? fileType 
+          : (fileName.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+
+        const prompt = `You are an expert AI knowledge engineer for SyncSupport Omnichannel Support Center.
+A human support agent (${uploadedBy || 'Agent'}) uploaded this reference photo / screenshot / diagram to train our RAG AI system.
+
+Agent Context & Notes: "${notes || 'No extra notes provided'}"
+File Name: "${fileName}"
+Category: "${category || 'General'}"
+
+Instructions:
+1. Examine all visual elements, screenshots, UI buttons, error codes, product models, diagrams, or text visible in the image.
+2. Synthesize this visual data into an authoritative, structured Knowledge Base entry so that customer service AI can accurately answer customer questions and provide troubleshooting procedures based on this photo.
+3. Structure your response as:
+Title: [Clear, informative title for what this image demonstrates or solves]
+Summary: [1-2 sentence overview of the issue and resolution]
+Detailed Knowledge & Step-by-Step Procedures:
+[Step-by-step guidance, troubleshooting instructions, key settings, and facts]`;
+
+        const parts = [
+          { text: prompt },
+          {
+            inlineData: {
+              mimeType: mime,
+              data: base64Clean
+            }
+          }
+        ];
+
+        const aiResponse = await safeGenerateContent(client, parts);
+        if (aiResponse) {
+          const lines = aiResponse.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('Title:')) {
+              extractedTitle = line.replace('Title:', '').trim();
+              break;
+            }
+          }
+          extractedContent = aiResponse;
+        }
+      } catch (err) {
+        console.warn('[AI Service Photo Extraction Warning]', err.message);
+      }
+    }
+
+    // Resilient fallback if AI offline or key unavailable
+    if (!extractedContent) {
+      extractedContent = `Title: Visual Guide: ${cleanBaseName}\n` +
+        `Category: ${category || 'Visual Guide'}\n` +
+        `Source File: ${fileName}\n` +
+        `Uploaded By: ${uploadedBy || 'Staff Agent'}\n\n` +
+        `Overview: Verified visual reference guide uploaded to assist customer inquiries.\n\n` +
+        `${notes ? `Agent Notes & Guidance:\n${notes}\n\n` : ''}` +
+        `Troubleshooting & Support Procedures:\n` +
+        `• Visual Reference: Check visual diagram "${cleanBaseName}".\n` +
+        `• Verification: Verify that the customer's hardware, screen state, or account settings match this configuration.\n` +
+        `• Action Steps: Follow verified support procedures and ensure customer satisfaction.`;
+    }
+
+    return {
+      title: extractedTitle,
+      content: extractedContent,
+      sourceType: 'PHOTO'
+    };
+  }
+
+  // 2. Direct Text / Markdown / CSV / JSON Extraction
+  if (isText && base64Clean) {
+    try {
+      const decodedText = Buffer.from(base64Clean, 'base64').toString('utf-8');
+      if (decodedText && decodedText.trim().length > 0) {
+        let content = decodedText.trim();
+        if (notes) {
+          content = `Agent Notes: ${notes}\n\nDocument Content:\n${content}`;
+        }
+        return {
+          title: cleanBaseName,
+          content,
+          sourceType: 'DOCUMENT'
+        };
+      }
+    } catch (e) {}
+  }
+
+  // 3. PDF Multimodal Extraction
+  if (isPdf) {
+    let extractedTitle = `Document: ${cleanBaseName}`;
+    let extractedContent = '';
+
+    if (client && base64Clean) {
+      try {
+        const prompt = `You are an expert AI knowledge engineer for SyncSupport.
+A human support agent (${uploadedBy || 'Agent'}) uploaded this PDF document to expand our RAG knowledge base.
+
+Agent Notes: "${notes || 'No extra notes provided'}"
+File Name: "${fileName}"
+Category: "${category || 'General'}"
+
+Instructions:
+1. Extract all core policies, troubleshooting guides, product information, FAQs, and step-by-step procedures from this PDF.
+2. Structure your response in clean Markdown with clear headings and bullet points for vector RAG indexing.
+3. Structure your response as:
+Title: [Clear document title]
+Content:
+[Full structured knowledge]`;
+
+        const parts = [
+          { text: prompt },
+          {
+            inlineData: {
+              mimeType: 'application/pdf',
+              data: base64Clean
+            }
+          }
+        ];
+
+        const aiResponse = await safeGenerateContent(client, parts);
+        if (aiResponse) {
+          const lines = aiResponse.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('Title:')) {
+              extractedTitle = line.replace('Title:', '').trim();
+              break;
+            }
+          }
+          extractedContent = aiResponse;
+        }
+      } catch (err) {
+        console.warn('[AI Service PDF Extraction Warning]', err.message);
+      }
+    }
+
+    // Fallback: extract text tokens from PDF buffer
+    if (!extractedContent && base64Clean) {
+      try {
+        const buffer = Buffer.from(base64Clean, 'base64');
+        const rawString = buffer.toString('latin1');
+        const textMatches = rawString.match(/\(([^()]{3,})\)T[jd]/g) || [];
+        const extractedWords = textMatches
+          .map(m => m.replace(/^[(\[]/, '').replace(/[)\]]T[jd]$/, '').trim())
+          .filter(t => t.length > 2)
+          .join(' ');
+
+        if (extractedWords.length > 40) {
+          extractedContent = `Document: ${cleanBaseName}\n\n${notes ? `Agent Notes: ${notes}\n\n` : ''}Extracted Text:\n${extractedWords}`;
+        }
+      } catch (e) {}
+    }
+
+    if (!extractedContent) {
+      extractedContent = `Title: Document Guide: ${cleanBaseName}\n` +
+        `Category: ${category || 'General'}\n` +
+        `Source Document: ${fileName}\n` +
+        `Uploaded By: ${uploadedBy || 'Staff Agent'}\n\n` +
+        `Overview: Verified technical/support documentation uploaded by support staff.\n\n` +
+        `${notes ? `Agent Notes & Guidance:\n${notes}\n\n` : ''}` +
+        `Operational Details:\n` +
+        `• Reference File: ${fileName}\n` +
+        `• Standard Protocol: Follow official guidelines outlined in ${cleanBaseName} when assisting customers.`;
+    }
+
+    return {
+      title: extractedTitle,
+      content: extractedContent,
+      sourceType: 'DOCUMENT'
+    };
+  }
+
+  // 4. General Document Fallback
+  let fallbackText = '';
+  if (base64Clean) {
+    try {
+      const decoded = Buffer.from(base64Clean, 'base64').toString('utf-8');
+      if (decoded && /^[ -~\t\r\n]{20,}$/.test(decoded.slice(0, 200))) {
+        fallbackText = decoded;
+      }
+    } catch (e) {}
+  }
+
+  return {
+    title: cleanBaseName,
+    content: fallbackText || `${cleanBaseName}\n\n${notes || 'Uploaded support documentation.'}`,
+    sourceType: sourceType
+  };
+};
+
 module.exports = {
   generateEmbedding,
   calculateCosineSimilarity,
   generateGroundedResponse,
   analyzeSentiment,
   generateSmartReplies,
-  extractKnowledgeFromChat
+  extractKnowledgeFromChat,
+  extractKnowledgeFromFile
 };
+

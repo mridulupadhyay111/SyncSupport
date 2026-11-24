@@ -176,8 +176,11 @@ export default function ChatWidget({ currentUser, onLoginClick }) {
       };
 
       const handleAiLearned = (data) => {
-        if (data && String(data.ticketId) === roomStr) {
-          setLearnedBanner(data.kbItem?.title || 'Human Agent Solution Learned');
+        if (!data || !data.ticketId || String(data.ticketId) === roomStr) {
+          const typePrefix = data?.sourceType === 'PHOTO' ? '📷 Photo: ' : data?.sourceType === 'DOCUMENT' ? '📄 Document: ' : '';
+          const title = data?.title || data?.kbItem?.title || 'Verified Support Solution';
+          setLearnedBanner(`${typePrefix}${title}`);
+          setTimeout(() => setLearnedBanner(null), 8000);
         }
       };
 
